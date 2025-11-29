@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <rect width="200" height="200" rx="24" fill="#800000"/>
+  <circle cx="100" cy="70" r="36" fill="#DAA520"/>
+  <path d="M60 150c20-32 60-32 80 0" stroke="#DAA520" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <text x="100" y="178" font-family="'Segoe UI', sans-serif" font-size="24" text-anchor="middle" fill="#FFFFFF">Dasara</text>
+</svg>

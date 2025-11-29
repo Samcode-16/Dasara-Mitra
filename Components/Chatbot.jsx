@@ -1,0 +1,162 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { MessageCircle, Send, X, RefreshCw } from 'lucide-react';
+import { Button, Input } from './ui';
+import { useLanguage } from './DasaraContext';
+import { base44 } from '../api/base44Client';
+
+export default function Chatbot() {
+  const { t, language } = useLanguage();
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState([
+    { role: 'assistant', content: language === 'kn' ? 'ನಮಸ್ಕಾರ! ಮೈಸೂರು ದಸರಾ ಬಗ್ಗೆ ನಾನು ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?' : 'Namaskara! How can I help you with Mysore Dasara today?' }
+  ]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isOpen]);
+
+  useEffect(() => {
+    setMessages((previous) => {
+      if (previous.length === 1 && previous[0].role === 'assistant') {
+        return [{
+          role: 'assistant',
+          content: language === 'kn'
+            ? 'ನಮಸ್ಕಾರ! ಮೈಸೂರು ದಸರಾ ಬಗ್ಗೆ ನಾನು ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?'
+            : 'Namaskara! How can I help you with Mysore Dasara today?'
+        }];
+      }
+      return previous;
+    });
+  }, [language]);
+
+  const handleSend = async (e) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
+
+    const userMsg = input;
+    setInput('');
+    setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+    setIsLoading(true);
+
+    try {
+      // Construct a prompt that includes context
+      const prompt = `
+        You are "Dasara Mitra", a helpful AI guide for the Mysore Dasara festival.
+        Current User Language: ${language === 'kn' ? 'Kannada' : 'English'}.
+        User Query: "${userMsg}".
+        
+        Instructions:
+        1. Respond concisely in the requested language (Kannada script for Kannada, English for English).
+        2. Be warm and cultural ("Namaskara").
+        3. Provide info on events, transport, or history if asked.
+        4. If asked about specific events, mention Jambo Savari or Palace Lighting.
+        5. Keep response under 100 words.
+      `;
+
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt: prompt,
+        add_context_from_internet: true // To get real Dasara info
+      });
+
+      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+    } catch (error) {
+      console.error("Chat error:", error);
+      setMessages(prev => [...prev, { role: 'assistant', content: t('error') }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <>
+      {/* Trigger Button */}
+      <button
+        onClick={() => setIsOpen(true)}
+        className={`fixed bottom-6 right-6 z-50 p-4 rounded-full shadow-xl text-white flex items-center gap-2 transition-all hover:scale-110 transform duration-200 ${isOpen ? 'hidden' : 'flex'}`}
+        style={{ backgroundColor: '#DAA520' }}
+      >
+        <MessageCircle className="w-6 h-6" />
+        <span className="font-bold hidden md:inline">{t('chatTitle')}</span>
+      </button>
+
+      {/* Chat Window */}
+      {isOpen && (
+        <div
+          className="fixed bottom-6 right-6 z-50 w-[90vw] md:w-[400px] h-[500px] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-[#DAA520] animate-in fade-in slide-in-from-bottom-4 duration-300"
+        >
+          {/* Header */}
+          <div className="p-4 bg-[#800000] text-white flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <h3 className="font-bold">{t('chatTitle')}</h3>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsOpen(false)}
+              className="text-white hover:bg-white/20"
+              aria-label="Close chat"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+            {messages.map((msg, idx) => (
+              <div 
+                key={idx} 
+                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div 
+                  className={`max-w-[80%] p-3 rounded-2xl text-sm ${
+                    msg.role === 'user' 
+                      ? 'bg-gray-200 text-gray-800 rounded-br-none' 
+                      : 'bg-[#800000] text-white rounded-bl-none'
+                  }`}
+                >
+                  {msg.content}
+                </div>
+              </div>
+            ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-[#800000] text-white p-3 rounded-2xl rounded-bl-none flex items-center gap-2">
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span className="text-xs">Thinking...</span>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input */}
+          <form onSubmit={handleSend} className="p-4 bg-white border-t">
+            <div className="flex gap-2">
+              <Input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder={t('chatPlaceholder')}
+                className="focus-visible:ring-[#DAA520]"
+              />
+              <Button 
+                type="submit" 
+                disabled={isLoading || !input.trim()}
+                className="bg-[#DAA520] hover:bg-[#B8860B] text-white"
+              >
+                <Send className="w-4 h-4" />
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
+    </>
+  );
+}
