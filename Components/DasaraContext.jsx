@@ -144,7 +144,13 @@ export const TRANSLATIONS = {
     category: "Category",
     time: "Time",
     directions: "Get Directions",
-    distance: "Distance"
+    distance: "Distance",
+    duration: "Duration",
+    routeNeedLocation: "Enable location to get directions.",
+    routeFetching: "Fetching the best route...",
+    routeUnavailable: "Route unavailable right now. Please try again in a moment.",
+    routeReady: "Walking route ready",
+    clearRoute: "Clear Route"
   },
   kn: {
     title: "ದಸರಾ ಮಿತ್ರ",
@@ -176,7 +182,13 @@ export const TRANSLATIONS = {
     category: "ವರ್ಗ",
     time: "ಸಮಯ",
     directions: "ಮಾರ್ಗಗಳು",
-    distance: "ದೂರ"
+    distance: "ದೂರ",
+    duration: "ಅವಧಿ",
+    routeNeedLocation: "ದಿಕ್ಕುಗಳನ್ನು ಪಡೆಯಲು ಸ್ಥಳ ಹಂಚಿಕೆಯನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿ.",
+    routeFetching: "ಉತ್ತಮ ಮಾರ್ಗವನ್ನು ಹುಡುಕಲಾಗುತ್ತಿದೆ...",
+    routeUnavailable: "ಈ ಕ್ಷಣ ಮಾರ್ಗ ಲಭ್ಯವಿಲ್ಲ. ದಯವಿಟ್ಟು ಸ್ವಲ್ಪ ನಂತರ ಪ್ರಯತ್ನಿಸಿ.",
+    routeReady: "ನಡೆದಾಡಲು ಸೂಕ್ತ ಮಾರ್ಗ ಸಿದ್ಧವಾಗಿದೆ",
+    clearRoute: "ಮಾರ್ಗವನ್ನು ಅಳಿಸಿ"
   }
 };
 

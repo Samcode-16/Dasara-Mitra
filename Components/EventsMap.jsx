@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Navigation, Calendar, Info } from 'lucide-react';
+import { Navigation, Calendar, Info, RefreshCw } from 'lucide-react';
 import { useLanguage, EVENTS_DATA } from './DasaraContext';
 import { Button, Card, CardContent, Badge } from './ui';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 // import 'leaflet/dist/leaflet.css';
 import 'leaflet/dist/leaflet.css'; // Retry import, but relying on CDN fallback below if needed
 import L from 'leaflet';
@@ -30,6 +30,11 @@ export default function EventsMap() {
   const [userLocation, setUserLocation] = useState(null);
   const [nearestEvents, setNearestEvents] = useState([]);
   const [permissionStatus, setPermissionStatus] = useState('prompt');
+  const [routePath, setRoutePath] = useState(null);
+  const [routeSummary, setRouteSummary] = useState(null);
+  const [routingStage, setRoutingStage] = useState('idle');
+  const [routingError, setRoutingError] = useState(null);
+  const [activeEvent, setActiveEvent] = useState(null);
   const mapRef = useRef(null);
 
   useEffect(() => {
@@ -45,6 +50,11 @@ export default function EventsMap() {
           setUserLocation(userLoc);
           setPermissionStatus('granted');
           calculateDistances(EVENTS_DATA, userLoc);
+          setRoutePath(null);
+          setRouteSummary(null);
+          setRoutingStage('idle');
+          setRoutingError(null);
+          setActiveEvent(null);
           
           // Fly to user location
           if (mapRef.current) {
@@ -91,6 +101,66 @@ export default function EventsMap() {
     var d = R * c; // Distance in km
     return d;
   }
+
+  const resetRoute = () => {
+    setRoutePath(null);
+    setRouteSummary(null);
+    setRoutingStage('idle');
+    setRoutingError(null);
+    setActiveEvent(null);
+  };
+
+  const handleDirections = async (event) => {
+    if (!userLocation) {
+      setRoutingError(t('routeNeedLocation'));
+      setRoutingStage('error');
+      handleGetLocation();
+      return;
+    }
+
+    setActiveEvent(event);
+    setRoutingStage('loading');
+    setRoutingError(null);
+    setRoutePath(null);
+    setRouteSummary(null);
+
+    try {
+      const url = `https://router.project-osrm.org/route/v1/walking/${userLocation.lng},${userLocation.lat};${event.lng},${event.lat}?alternatives=false&overview=full&geometries=geojson`;
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error('Route service unavailable');
+      }
+
+      const data = await response.json();
+
+      if (!data.routes || !data.routes.length) {
+        throw new Error('No routes found');
+      }
+
+      const route = data.routes[0];
+      const coordinates = route.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+
+      setRoutePath(coordinates);
+      setRouteSummary({
+        eventName: language === 'kn' ? event.name_kn : event.name,
+        distanceKm: route.distance / 1000,
+        durationMin: route.duration / 60,
+      });
+      setRoutingStage('success');
+
+      if (mapRef.current && coordinates.length) {
+        const bounds = L.latLngBounds(coordinates);
+        mapRef.current.fitBounds(bounds, { padding: [32, 32] });
+      }
+    } catch (error) {
+      console.error('Routing error:', error);
+      setRoutingStage('error');
+      setRoutingError(t('routeUnavailable'));
+      setRoutePath(null);
+      setRouteSummary(null);
+    }
+  };
 
   function deg2rad(deg) {
     return deg * (Math.PI/180)
@@ -159,9 +229,13 @@ export default function EventsMap() {
                       if (mapRef.current) {
                         mapRef.current.flyTo([event.lat, event.lng], 16);
                       }
+                      handleDirections(event);
                     }}
+                    disabled={routingStage === 'loading'}
                   >
-                    {t('directions')}
+                    {routingStage === 'loading' && activeEvent?.id === event.id
+                      ? t('routeFetching')
+                      : t('directions')}
                   </Button>
                 </CardContent>
               </Card>
@@ -205,7 +279,46 @@ export default function EventsMap() {
                   </Popup>
                 </Marker>
               ))}
+
+              {routePath && (
+                <Polyline positions={routePath} pathOptions={{ color: '#DAA520', weight: 6, opacity: 0.85 }} />
+              )}
             </MapContainer>
+
+            {routingStage === 'loading' && (
+              <div className="absolute left-4 right-4 bottom-4 bg-white/90 backdrop-blur-sm border border-yellow-200 rounded-lg p-4 shadow-lg flex items-center gap-3">
+                <RefreshCw className="w-5 h-5 text-[#800000] animate-spin" />
+                <p className="text-sm text-[#800000] font-medium">{t('routeFetching')}</p>
+              </div>
+            )}
+
+            {routingStage === 'error' && routingError && (
+              <div className="absolute left-4 right-4 bottom-4 bg-white/95 border border-red-200 text-red-700 rounded-lg p-4 shadow-lg text-sm">
+                {routingError}
+              </div>
+            )}
+
+            {routingStage === 'success' && routeSummary && (
+              <div className="absolute left-4 right-4 bottom-4 bg-white/95 border border-[#DAA520] rounded-lg p-4 shadow-lg">
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-base font-semibold text-[#800000]">{routeSummary.eventName}</p>
+                      <p className="text-sm text-gray-600">{t('routeReady')}</p>
+                    </div>
+                    <div className="text-sm text-gray-700 text-right">
+                      <p>{t('distance')}: {routeSummary.distanceKm.toFixed(1)} km</p>
+                      <p>{t('duration')}: {Math.round(routeSummary.durationMin)} min</p>
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="sm" onClick={resetRoute}>
+                      {t('clearRoute')}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

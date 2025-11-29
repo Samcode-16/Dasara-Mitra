@@ -2,21 +2,17 @@ import React from 'react';
 import { useLanguage } from '../Components/DasaraContext';
 import { Button } from '../Components/ui';
 import { MapPin, Bus, Camera, ArrowRight } from 'lucide-react';
-import EventsMap from '../Components/EventsMap';
-import TransportPlanner from '../Components/TransportPlanner';
-import Gallery from '../Components/Gallery';
-import Chatbot from '../Components/Chatbot';
-// LanguageProvider handled in Layout
+import { useNavigate } from 'react-router-dom';
 
 function DasaraApp() {
   const { t } = useLanguage();
+  const navigate = useNavigate();
 
-  const scrollToSection = (id) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
+  const featureCards = [
+    { icon: MapPin, label: t('events'), path: '/events', desc: 'Pin heritage venues, get timing alerts, and spot the closest celebrations.' },
+    { icon: Bus, label: t('transport'), path: '/transport', desc: 'Compare travel options and plan smooth hops between festivities.' },
+    { icon: Camera, label: t('gallery'), path: '/gallery', desc: 'Browse regal visuals, palace lights, and treasured Dasara snapshots.' },
+  ];
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -41,10 +37,10 @@ function DasaraApp() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               className="bg-[#DAA520] hover:bg-[#B8860B] text-white font-bold text-lg px-8 py-6 h-auto shadow-lg shadow-yellow-900/20 transition-all hover:scale-105"
-              onClick={() => scrollToSection('events')}
+              onClick={() => navigate('/events')}
             >
               {t('ctaEvents')}
             </Button>
@@ -52,7 +48,7 @@ function DasaraApp() {
               size="lg" 
               variant="outline"
               className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-[#800000] font-bold text-lg px-8 py-6 h-auto backdrop-blur-sm transition-all hover:scale-105"
-              onClick={() => scrollToSection('gallery')}
+              onClick={() => navigate('/gallery')}
             >
               {t('ctaGallery')}
             </Button>
@@ -71,14 +67,10 @@ function DasaraApp() {
       <section className="relative z-20 -mt-16 md:-mt-24 pb-16">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              { icon: MapPin, label: t('events'), id: 'events', desc: "Find events near you" },
-              { icon: Bus, label: t('transport'), id: 'transport', desc: "Get routes & fares" },
-              { icon: Camera, label: t('gallery'), id: 'gallery', desc: "Relive the magic" },
-            ].map((item, idx) => (
+            {featureCards.map((item, idx) => (
               <div 
                 key={idx}
-                onClick={() => scrollToSection(item.id)}
+                onClick={() => navigate(item.path)}
                 className="bg-white p-6 rounded-xl shadow-xl cursor-pointer hover:-translate-y-2 transition-all duration-300 border-t-4 border-[#DAA520] group"
               >
                 <div className="flex items-center justify-between mb-4">
@@ -95,10 +87,33 @@ function DasaraApp() {
         </div>
       </section>
 
-      <EventsMap />
-      <TransportPlanner />
-      <Gallery />
-      <Chatbot />
+      <section className="container mx-auto px-4 pb-20">
+        <div className="grid gap-10 md:grid-cols-2">
+          <div className="bg-white/80 backdrop-blur-sm border border-[#DAA520]/40 rounded-2xl shadow-lg p-10 space-y-4">
+            <h2 className="text-2xl font-semibold text-[#800000]">Festival Highlights</h2>
+            <p className="text-gray-600 leading-relaxed">
+              Track marquee programmes—from the majestic Jumboo Savari to the torchlight parade—on an interactive map that supports English and Kannada.
+            </p>
+            <Button variant="ghost" className="text-[#800000]" onClick={() => navigate('/events')}>
+              Explore Events <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+          <div className="bg-[#800000] text-white rounded-2xl shadow-xl p-10 space-y-4">
+            <h2 className="text-2xl font-semibold text-[#DAA520]">Festival Companion</h2>
+            <p className="text-white/90 leading-relaxed">
+              Get instant travel estimates, browse galleries, and chat with your Dasara helper any time. The experience is tuned for mobile visitors navigating the city.
+            </p>
+            <div className="flex gap-3">
+              <Button size="sm" className="bg-[#DAA520] text-[#800000] hover:bg-[#B8860B]" onClick={() => navigate('/transport')}>
+                Plan Routes
+              </Button>
+              <Button size="sm" variant="outline" className="border-white text-white hover:bg-white hover:text-[#800000]" onClick={() => navigate('/gallery')}>
+                View Gallery
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

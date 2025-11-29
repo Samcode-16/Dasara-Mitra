@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-// import { Link } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { useLanguage } from './DasaraContext';
 import { Menu, Globe, X } from 'lucide-react';
 import { Button } from './ui';
@@ -9,19 +9,11 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
-    { label: t('home'), href: "#home" },
-    { label: t('events'), href: "#events" },
-    { label: t('transport'), href: "#transport" },
-    { label: t('gallery'), href: "#gallery" },
+    { label: t('home'), path: '/' },
+    { label: t('events'), path: '/events' },
+    { label: t('transport'), path: '/transport' },
+    { label: t('gallery'), path: '/gallery' },
   ];
-
-  const handleNavigate = (href) => {
-    const element = document.getElementById(href.replace('#', ''));
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-    setMobileMenuOpen(false);
-  };
 
   return (
     <header className="sticky top-0 z-50 w-full bg-maroon-900 text-white shadow-md border-b border-gold-500/30" style={{ backgroundColor: '#800000' }}>
@@ -35,13 +27,17 @@ export default function Header() {
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-6">
           {navItems.map((item) => (
-            <button
-              key={item.href}
-              onClick={() => handleNavigate(item.href)}
-              className="text-sm font-medium hover:text-[#DAA520] transition-colors"
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={({ isActive }) =>
+                `text-sm font-medium transition-colors ${
+                  isActive ? 'text-[#DAA520]' : 'text-white hover:text-[#DAA520]'
+                }`
+              }
             >
               {item.label}
-            </button>
+            </NavLink>
           ))}
         </nav>
 
@@ -86,13 +82,18 @@ export default function Header() {
             </div>
             <div className="flex flex-col gap-2 mt-6">
               {navItems.map((item) => (
-                <button
-                  key={item.href}
-                  onClick={() => handleNavigate(item.href)}
-                  className="text-left text-base font-medium rounded-md px-3 py-2 hover:bg-gray-100"
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={({ isActive }) =>
+                    `text-left text-base font-medium rounded-md px-3 py-2 ${
+                      isActive ? 'bg-[#800000]/10 text-[#800000]' : 'hover:bg-gray-100'
+                    }`
+                  }
                 >
                   {item.label}
-                </button>
+                </NavLink>
               ))}
             </div>
           </div>

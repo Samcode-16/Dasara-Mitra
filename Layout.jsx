@@ -1,5 +1,6 @@
 import React from 'react';
 import Header from './Components/Header.jsx';
+import Chatbot from './Components/Chatbot.jsx';
 import { useLanguage, LanguageProvider } from './Components/DasaraContext.jsx';
 
 function LayoutContent({ children }) {
@@ -11,6 +12,7 @@ function LayoutContent({ children }) {
       <main className="flex-1">
         {children}
       </main>
+      <Chatbot />
       <footer className="bg-[#333333] text-white py-8 border-t-4 border-[#800000]">
         <div className="container mx-auto px-4 text-center">
           <p className="text-[#DAA520] font-medium mb-2">{t('title')}</p>
