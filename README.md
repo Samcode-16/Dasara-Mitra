@@ -36,7 +36,7 @@ Outputs are written to the `dist/` directory. Serve them via any static host.
 
 - **Translations** – Update strings in `Components/DasaraContext.jsx`.
 - **Event Data** – Edit the `EVENTS_DATA` array in `Components/DasaraContext.jsx`.
-- **Gallery Images** – Replace or add files in `public/images/gallery`, then adjust entries in `GALLERY_IMAGES` within `Components/Gallery.jsx`.
+- **Gallery Images** – Configure Cloudinary by copying `.env.example` to `.env`, then set `VITE_CLOUDINARY_CLOUD_NAME` and `VITE_CLOUDINARY_GALLERY_TAG`. Upload photos to Cloudinary with the chosen tag (or keep the defaults to fall back on local SVG placeholders).
 - **Branding** – Swap `public/images/branding/logo.png` and tweak header colors/styles inside `Components/Header.jsx`.
 
 ### Folder Highlights

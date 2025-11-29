@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLanguage } from './DasaraContext';
 import { X, ZoomIn } from 'lucide-react';
 
-const GALLERY_IMAGES = [
+const FALLBACK_GALLERY = [
   { url: "/images/gallery/palace-illumination.svg", alt: "Mysore Palace Illumination", caption: "The majestic Mysore Palace illuminated during Dasara nights." },
   { url: "/images/gallery/jumboo-savari.svg", alt: "Jumboo Savari Procession", caption: "Decorated elephants leading the iconic Jumboo Savari." },
   { url: "/images/gallery/torchlight-parade.svg", alt: "Torchlight Parade", caption: "Torchbearers preparing for the Bannimantap parade." },
@@ -14,6 +14,74 @@ const GALLERY_IMAGES = [
 export default function Gallery() {
   const { t } = useLanguage();
   const [selectedImage, setSelectedImage] = useState(null);
+  const [images, setImages] = useState(FALLBACK_GALLERY);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+  const galleryTag = import.meta.env.VITE_CLOUDINARY_GALLERY_TAG;
+
+  useEffect(() => {
+    if (!cloudName || !galleryTag) {
+      return;
+    }
+
+    const controller = new AbortController();
+    const manifestUrl = `https://res.cloudinary.com/${cloudName}/image/list/${galleryTag}.json`;
+
+    const buildImageUrl = (publicId, format) => {
+      const extension = format ? `.${format}` : '';
+      return `https://res.cloudinary.com/${cloudName}/image/upload/f_auto,q_auto/${publicId}${extension}`;
+    };
+
+    const prettify = (text) =>
+      text
+        .split('/')
+        .pop()
+        .replace(/[-_]+/g, ' ')
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+
+    const fetchCloudinaryImages = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await fetch(manifestUrl, { signal: controller.signal });
+
+        if (!response.ok) {
+          throw new Error('Failed to load Cloudinary manifest');
+        }
+
+        const data = await response.json();
+
+        if (!Array.isArray(data.resources) || data.resources.length === 0) {
+          throw new Error('No resources found for the configured Cloudinary tag');
+        }
+
+        const mapped = data.resources.map((resource) => ({
+          id: resource.asset_id || resource.public_id,
+          url: buildImageUrl(resource.public_id, resource.format),
+          alt: resource.public_id ? prettify(resource.public_id) : 'Dasara Moment',
+          caption:
+            resource.context?.custom?.caption ||
+            resource.context?.custom?.alt ||
+            prettify(resource.public_id),
+        }));
+
+        setImages(mapped);
+      } catch (err) {
+        if (err.name === 'AbortError') return;
+        console.error('Cloudinary gallery error:', err);
+        setImages(FALLBACK_GALLERY);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCloudinaryImages();
+
+    return () => controller.abort();
+  }, [cloudName, galleryTag]);
 
   return (
     <section id="gallery" className="py-12 md:py-20 bg-white">
@@ -23,10 +91,20 @@ export default function Gallery() {
             {t('galleryTitle')}
           </h2>
           <div className="w-24 h-1 bg-[#DAA520] mx-auto rounded-full"></div>
+          {cloudName && galleryTag && (
+            <p className="mt-4 text-sm text-gray-500">
+              Cloudinary tag: <span className="font-semibold">{galleryTag}</span>
+            </p>
+          )}
+          {error && (
+            <p className="mt-4 text-sm text-red-600">
+              {error} — falling back to default gallery assets.
+            </p>
+          )}
         </div>
 
         <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
-          {GALLERY_IMAGES.map((img, idx) => (
+          {images.map((img, idx) => (
             <div 
               key={idx} 
               className="break-inside-avoid relative group rounded-xl overflow-hidden cursor-pointer shadow-md hover:shadow-xl transition-all duration-300"
@@ -49,6 +127,13 @@ export default function Gallery() {
             </div>
           ))}
         </div>
+
+        {loading && (
+          <div className="mt-8 text-center text-sm text-gray-500 flex justify-center gap-2 items-center">
+            <div className="w-4 h-4 border-2 border-[#DAA520] border-t-transparent rounded-full animate-spin"></div>
+            Loading festival memories from Cloudinary...
+          </div>
+        )}
 
         {selectedImage && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4">
