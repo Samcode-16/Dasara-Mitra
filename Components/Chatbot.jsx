@@ -37,17 +37,29 @@ export default function Chatbot() {
 
   const sendPromptToGemini = async ({ userMessage, languageCode, history }) => {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY?.trim();
-
+    
     if (!apiKey) {
       throw new Error('missing-api-key');
     }
 
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+    const languageHint = languageCode === 'kn' ? 'Kannada' : 'English';
 
     const systemInstruction = {
       role: 'system',
       parts: [{
-        text: 'You are "Dasara Mitra", a warm and cultural festival guide for Mysuru Dasara. Always greet with "Namaskara" in the user\'s language, respond with factual event, transport, or history details, and keep answers under 100 words.'
+        text: `You are "Dasara Mitra", a helpful and warm cultural festival guide for Mysuru Dasara. 
+
+LANGUAGE RULES:
+- The user's preferred language is ${languageHint}
+- Always respond in ${languageHint} language regardless of what language the user writes in
+- If user language is Kannada: respond in Kannada script (ಕನ್ನಡ)
+- If user language is English: respond in English
+- Never refuse to answer due to language differences
+- Be helpful and accommodating
+
+CONTENT: Provide factual information about Mysuru Dasara events, transport, history, and cultural details. Keep responses under 100 words and always greet with "Namaskara" in the appropriate language.`
       }]
     };
 
@@ -58,8 +70,6 @@ export default function Chatbot() {
         role: entry.role === 'assistant' ? 'model' : 'user',
         parts: [{ text: entry.content }]
       }));
-
-    const languageHint = languageCode === 'kn' ? 'Kannada' : 'English';
 
     const contents = [
       ...trimmedHistory,
