@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useLanguage } from './DasaraContext';
 import { Menu, Globe, X } from 'lucide-react';
-import { Button } from './ui';
+import { Button } from './ui.jsx';
 
 export default function Header() {
   const { language, toggleLanguage, t } = useLanguage();

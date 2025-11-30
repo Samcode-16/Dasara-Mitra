@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Navigation, Calendar, Info, RefreshCw, Search } from 'lucide-react';
 import { useLanguage, EVENTS_DATA, ROAD_CLOSURES } from './DasaraContext';
-import { Button, Card, CardContent, Badge } from './ui';
+import { Button, Card, CardContent, Badge } from './ui.jsx';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle } from 'react-leaflet';
 // import 'leaflet/dist/leaflet.css';
 import 'leaflet/dist/leaflet.css'; // Retry import, but relying on CDN fallback below if needed

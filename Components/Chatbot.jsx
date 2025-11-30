@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, Send, X, RefreshCw } from 'lucide-react';
-import { Button, Input } from './ui';
+import { Button, Input } from './ui.jsx';
 import { useLanguage } from './DasaraContext';
 
 export default function Chatbot() {

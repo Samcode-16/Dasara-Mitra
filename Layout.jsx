@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { MapPin, Route, Camera, CalendarDays } from 'lucide-react';
 import Header from './Components/Header.jsx';
 import Chatbot from './Components/Chatbot.jsx';
-import { Button } from './Components/ui';
+import { Button } from './Components/ui.jsx';
 import { useLanguage, LanguageProvider } from './Components/DasaraContext.jsx';
 
 function LayoutContent({ children }) {

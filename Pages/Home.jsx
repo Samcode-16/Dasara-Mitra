@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLanguage } from '../Components/DasaraContext';
-import { Button } from '../Components/ui';
+import { Button } from '../Components/ui.jsx';
 import { MapPin, Bus, Camera, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 

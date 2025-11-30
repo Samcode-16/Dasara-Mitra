@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLanguage, EVENTS_DATA } from './DasaraContext';
-import { Card, CardContent, CardHeader, CardTitle, Button } from './ui';
+import { Card, CardContent, CardHeader, CardTitle, Button } from './ui.jsx';
 import { Bus, Car, Truck, Clock, IndianRupee, MapPin } from 'lucide-react';
 
 export default function TransportPlanner() {
