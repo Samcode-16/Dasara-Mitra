@@ -2,7 +2,7 @@
   "name": "dasara-mitra",
   "version": "1.0.0",
   "description": "",
-  "main": "Layout.js",
+  "main": "Components/Layout.jsx",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

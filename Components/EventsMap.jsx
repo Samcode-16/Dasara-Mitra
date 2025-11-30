@@ -200,6 +200,7 @@ export default function EventsMap() {
         acc[event.ageGroup] = {
           en: event.ageGroup,
           kn: event.ageGroup_kn || event.ageGroup,
+          hi: event.ageGroup_hi || event.ageGroup,
         };
       }
       return acc;
@@ -230,9 +231,9 @@ export default function EventsMap() {
 
     const term = searchTerm.trim().toLowerCase();
     return list.filter((event) => {
-      const name = (language === 'kn' ? event.name_kn : event.name) || '';
+      const name = getLocalizedEventText(event, 'name');
       const category = event.category || '';
-      const ageGroup = (language === 'kn' ? event.ageGroup_kn : event.ageGroup) || '';
+      const ageGroup = getLocalizedAgeGroup(event);
       const dayText = String(event.day || '');
       return (
         name.toLowerCase().includes(term) ||
@@ -271,6 +272,44 @@ export default function EventsMap() {
     }
   }), [t, language]);
 
+  const getLocalizedEventText = (event, key) => {
+    if (!event) {
+      return '';
+    }
+    if (language === 'kn') {
+      return event[`${key}_kn`] || event[key] || '';
+    }
+    if (language === 'hi') {
+      return event[`${key}_hi`] || event[key] || '';
+    }
+    return event[key] || '';
+  };
+
+  const getLocalizedAgeGroup = (event) => {
+    if (!event) {
+      return '';
+    }
+    if (language === 'kn') {
+      return event.ageGroup_kn || event.ageGroup || '';
+    }
+    if (language === 'hi') {
+      return event.ageGroup_hi || event.ageGroup || '';
+    }
+    return event.ageGroup || '';
+  };
+
+  useEffect(() => {
+    if (routeSummary && activeEvent) {
+      const localizedName = getLocalizedEventText(activeEvent, 'name');
+      if (routeSummary.eventName !== localizedName) {
+        setRouteSummary((prev) => ({
+          ...prev,
+          eventName: localizedName,
+        }));
+      }
+    }
+  }, [language, routeSummary, activeEvent]);
+
   const handleDirections = async (event) => {
     if (!userLocation) {
       setRoutingError(t('routeNeedLocation'));
@@ -306,7 +345,7 @@ export default function EventsMap() {
 
       setRoutePath(coordinates);
       setRouteSummary({
-        eventName: language === 'kn' ? event.name_kn : event.name,
+        eventName: getLocalizedEventText(event, 'name'),
         distanceKm: route.distance / 1000,
         durationMin: route.duration / 60,
       });
@@ -524,7 +563,9 @@ export default function EventsMap() {
                     <option key={group} value={group}>
                       {language === 'kn'
                         ? ageGroupLabels[group]?.kn || group
-                        : ageGroupLabels[group]?.en || group}
+                        : language === 'hi'
+                          ? ageGroupLabels[group]?.hi || group
+                          : ageGroupLabels[group]?.en || group}
                     </option>
                   ))}
                 </select>
@@ -558,7 +599,7 @@ export default function EventsMap() {
                 <CardContent className="p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3 mb-2">
                     <h3 className="font-bold text-lg text-gray-800">
-                      {language === 'kn' ? event.name_kn : event.name}
+                      {getLocalizedEventText(event, 'name')}
                     </h3>
                     <div className="flex items-center gap-2 text-xs">
                       <Badge className="border border-[#DAA520] text-[#B8860B] bg-transparent">
@@ -575,14 +616,14 @@ export default function EventsMap() {
                     </div>
                   </div>
                   <p className="text-sm text-gray-600 mb-3">
-                    {language === 'kn' ? event.description_kn : event.description}
+                    {getLocalizedEventText(event, 'description')}
                   </p>
                   <div className="flex flex-wrap items-center gap-2 mb-3 text-xs">
                     <Badge className="bg-[#800000]/10 text-[#800000] border-transparent">
                       {`${t('dayLabel')} ${event.day}`}
                     </Badge>
                     <Badge className="bg-[#DAA520]/10 text-[#8B7500] border-transparent">
-                      {language === 'kn' ? event.ageGroup_kn : event.ageGroup}
+                      {getLocalizedAgeGroup(event)}
                     </Badge>
                   </div>
                   <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
@@ -663,10 +704,10 @@ export default function EventsMap() {
                 >
                   <Popup>
                     <div className="text-center space-y-1">
-                      <h3 className="font-bold text-[#800000]">{language === 'kn' ? event.name_kn : event.name}</h3>
+                      <h3 className="font-bold text-[#800000]">{getLocalizedEventText(event, 'name')}</h3>
                       <p className="text-xs text-gray-600">{event.time}</p>
                       <p className="text-[11px] text-gray-500">
-                        {`${t('dayLabel')} ${event.day}`} • {language === 'kn' ? event.ageGroup_kn : event.ageGroup}
+                        {`${t('dayLabel')} ${event.day}`} • {getLocalizedAgeGroup(event)}
                       </p>
                       {(() => {
                         const statusInfo = statusStyles[event.status] || statusStyles.upcoming;

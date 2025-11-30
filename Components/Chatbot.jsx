@@ -3,11 +3,23 @@ import { MessageCircle, Send, X, RefreshCw } from 'lucide-react';
 import { Button, Input } from './ui.jsx';
 import { useLanguage } from './DasaraContext';
 
+const getAssistantGreeting = (lang) => {
+  if (lang === 'kn') {
+    return 'ನಮಸ್ಕಾರ! ಮೈಸೂರು ದಸರಾ ಬಗ್ಗೆ ನಾನು ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?';
+  }
+  if (lang === 'hi') {
+    return 'नमस्कार! मैसूरु दशहरा में मैं आपकी कैसे सहायता कर सकता हूँ?';
+  }
+  return 'Namaskara! How can I help you with Mysore Dasara today?';
+};
+
+const containsHindiScript = (text = '') => /[\u0900-\u097F]/.test(text);
+
 export default function Chatbot() {
   const { t, language } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: language === 'kn' ? 'ನಮಸ್ಕಾರ! ಮೈಸೂರು ದಸರಾ ಬಗ್ಗೆ ನಾನು ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?' : 'Namaskara! How can I help you with Mysore Dasara today?' }
+    { role: 'assistant', content: getAssistantGreeting(language) }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -24,12 +36,7 @@ export default function Chatbot() {
   useEffect(() => {
     setMessages((previous) => {
       if (previous.length === 1 && previous[0].role === 'assistant') {
-        return [{
-          role: 'assistant',
-          content: language === 'kn'
-            ? 'ನಮಸ್ಕಾರ! ಮೈಸೂರು ದಸರಾ ಬಗ್ಗೆ ನಾನು ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?'
-            : 'Namaskara! How can I help you with Mysore Dasara today?'
-        }];
+        return [{ role: 'assistant', content: getAssistantGreeting(language) }];
       }
       return previous;
     });
@@ -44,22 +51,34 @@ export default function Chatbot() {
 
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
-    const languageHint = languageCode === 'kn' ? 'Kannada' : 'English';
+    const languageHints = {
+      en: 'English',
+      kn: 'Kannada',
+      hi: 'Hindi'
+    };
+    const languageHint = languageHints[languageCode] || 'English';
+
+    const namaskara = languageCode === 'hi'
+      ? 'नमस्कार'
+      : languageCode === 'kn'
+        ? 'ನಮಸ್ಕಾರ'
+        : 'Namaskara';
 
     const systemInstruction = {
       role: 'system',
       parts: [{
-        text: `You are "Dasara Mitra", a helpful and warm cultural festival guide for Mysuru Dasara. 
+        text: `You are "Dasara Mitra", a helpful and warm cultural festival guide for Mysuru Dasara.
 
 LANGUAGE RULES:
 - The user's preferred language is ${languageHint}
-- Always respond in ${languageHint} language regardless of what language the user writes in
-- If user language is Kannada: respond in Kannada script (ಕನ್ನಡ)
-- If user language is English: respond in English
-- Never refuse to answer due to language differences
-- Be helpful and accommodating
+- Always respond in ${languageHint} regardless of input language
+- Kannada requests → Kannada script (ಕನ್ನಡ)
+- Hindi requests → Hindi script (देवनागरी)
+- English requests → English
+- Begin every reply with "${namaskara}" in the relevant script
+- Never refuse to answer due to language differences; be helpful
 
-CONTENT: Provide factual information about Mysuru Dasara events, transport, history, and cultural details. Keep responses under 100 words and always greet with "Namaskara" in the appropriate language.`
+CONTENT: Provide factual information about Mysuru Dasara events, transport, history, and cultural details. Keep responses under 100 words.`
       }]
     };
 
@@ -88,7 +107,7 @@ CONTENT: Provide factual information about Mysuru Dasara events, transport, hist
         contents,
         system_instruction: systemInstruction,
         generation_config: {
-          temperature: languageCode === 'kn' ? 0.7 : 0.6,
+          temperature: languageCode === 'kn' ? 0.7 : languageCode === 'hi' ? 0.65 : 0.6,
           top_p: 0.95,
           top_k: 40
         }
@@ -129,7 +148,8 @@ CONTENT: Provide factual information about Mysuru Dasara events, transport, hist
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const userMsg = input;
+    const userMsg = input.trim();
+    const responseLanguage = containsHindiScript(userMsg) ? 'hi' : language;
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
     setIsLoading(true);
@@ -138,7 +158,7 @@ CONTENT: Provide factual information about Mysuru Dasara events, transport, hist
       // Construct a prompt that includes context
       const reply = await sendPromptToGemini({
         userMessage: userMsg,
-        languageCode: language,
+        languageCode: responseLanguage,
         history: messages
       });
 
@@ -202,14 +222,14 @@ CONTENT: Provide factual information about Mysuru Dasara events, transport, hist
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
             {messages.map((msg, idx) => (
-              <div 
-                key={idx} 
+              <div
+                key={idx}
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <div 
+                <div
                   className={`max-w-[80%] p-3 rounded-2xl text-sm ${
-                    msg.role === 'user' 
-                      ? 'bg-gray-200 text-gray-800 rounded-br-none' 
+                    msg.role === 'user'
+                      ? 'bg-gray-200 text-gray-800 rounded-br-none'
                       : 'bg-[#800000] text-white rounded-bl-none'
                   }`}
                 >
@@ -237,8 +257,8 @@ CONTENT: Provide factual information about Mysuru Dasara events, transport, hist
                 placeholder={t('chatPlaceholder')}
                 className="focus-visible:ring-[#DAA520]"
               />
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={isLoading || !input.trim()}
                 className="bg-[#DAA520] hover:bg-[#B8860B] text-white"
               >

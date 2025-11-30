@@ -1,24 +1,43 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Route, Camera, CalendarDays } from 'lucide-react';
-import Header from './Components/Header.jsx';
-import Chatbot from './Components/Chatbot.jsx';
-import { Button } from './Components/ui.jsx';
-import { useLanguage, LanguageProvider } from './Components/DasaraContext.jsx';
+import { MapPin, Route, Camera, CalendarDays, Phone, Mail, Clock } from 'lucide-react';
+import Header from './Header.jsx';
+import Chatbot from './Chatbot.jsx';
+import { Button } from './ui.jsx';
+import { useLanguage, LanguageProvider } from './DasaraContext.jsx';
 
 function LayoutContent({ children }) {
   const { t, language } = useLanguage();
-
-  const discoverLinks = [
-    { label: t('events'), href: '/events' },
-    { label: t('transport'), href: '/transport' },
-    { label: t('gallery'), href: '/gallery' }
-  ];
 
   const visitLinks = [
     { label: t('ctaEvents'), href: '/events#events' },
     { label: t('ctaGallery'), href: '/gallery' },
     { label: t('findRoute'), href: '/transport' }
+  ];
+
+  const contactDetails = [
+    {
+      icon: Phone,
+      label: t('footerContactPhoneLabel'),
+      value: t('footerContactPhoneValue'),
+      href: 'tel:+9178931XXXXX'
+    },
+    {
+      icon: Mail,
+      label: t('footerContactEmailLabel'),
+      value: t('footerContactEmailValue'),
+      href: 'mailto:support@dasaramitra.in'
+    },
+    {
+      icon: Clock,
+      label: t('footerContactHoursLabel'),
+      value: t('footerContactHoursValue')
+    },
+    {
+      icon: MapPin,
+      label: t('footerContactOfficeLabel'),
+      value: t('footerContactOfficeValue')
+    }
   ];
 
   const highlightCards = [
@@ -51,11 +70,8 @@ function LayoutContent({ children }) {
     },
     {
       icon: CalendarDays,
-      title: language === 'kn' ? 'ದಿನವಾರ ಹಬ್ಬದ ಹೊಳೆ' : 'Daily Festival Flow',
-      description:
-        language === 'kn'
-          ? 'ಪ್ರತಿ ದಿನದ ಸಂಭವಗಳನ್ನು ತಿಳಿದು ವಿಶೇಷ ಕ್ಷಣಗಳನ್ನು ತಪ್ಪಿಸಿಕೊಳ್ಳಬೇಡಿ.'
-          : 'Stay ahead of the day-wise highlights and never miss a spectacle.',
+      title: t('footerDailyFlowTitle'),
+      description: t('footerDailyFlowDescription'),
       href: '/events#events'
     }
   ];
@@ -70,7 +86,6 @@ function LayoutContent({ children }) {
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-24 -right-16 h-72 w-72 rounded-full bg-[#FACC15]/12 blur-3xl" />
           <div className="absolute -bottom-28 -left-20 h-[24rem] w-[24rem] rounded-full bg-[#800000]/18 blur-3xl" />
-          <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#FACC15]/10" />
         </div>
 
         <div className="relative container mx-auto px-4 py-14">
@@ -107,8 +122,13 @@ function LayoutContent({ children }) {
 
           <div className="grid gap-10 lg:grid-cols-[1.6fr,1fr,1fr]">
             <div className="space-y-6">
-              <span className="inline-flex h-12 w-12 items-center justify-center rounded-xl border border-[#FACC15]/60 bg-[#7F1D1D]/80 text-lg font-semibold text-[#FACC15] shadow-lg shadow-[#0B1B3B]/40">
-                DM
+              <span className="inline-flex h-16 w-16 items-center justify-center rounded-2xl border border-[#FACC15]/50 bg-white/10 p-2 shadow-lg shadow-[#0B1B3B]/50">
+                <img
+                  src="/images/branding/logo.png"
+                  alt="Dasara Mitra logo"
+                  className="h-full w-full object-contain"
+                  loading="lazy"
+                />
               </span>
               <p className="text-2xl font-semibold text-[#FDE68A]">{t('title')}</p>
               <p className="text-sm leading-relaxed text-slate-100/75">{t('footerAboutDescription')}</p>
@@ -135,18 +155,30 @@ function LayoutContent({ children }) {
             </div>
 
             <div className="space-y-4">
-              <p className="text-lg font-semibold uppercase tracking-wide text-[#FACC15]">{t('footerDiscoverTitle')}</p>
+              <p className="text-lg font-semibold uppercase tracking-wide text-[#FACC15]">{t('footerContactTitle')}</p>
               <div className="h-1 w-14 rounded-full bg-gradient-to-r from-[#FACC15] to-transparent" />
-              <ul className="space-y-2 text-sm text-slate-100/75">
-                {discoverLinks.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      to={link.href}
-                      className="group inline-flex items-center gap-2 transition-colors duration-200 hover:text-[#FACC15]"
-                    >
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#FACC15]/70 transition-colors duration-200 group-hover:bg-[#FACC15]" />
-                      {link.label}
-                    </Link>
+              <ul className="space-y-3 text-sm text-slate-100/85">
+                {contactDetails.map((detail) => (
+                  <li
+                    key={detail.label}
+                    className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3"
+                  >
+                    <span className="mt-1 rounded-lg bg-black/30 p-2 text-[#FACC15]">
+                      <detail.icon className="h-4 w-4" />
+                    </span>
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-[#FDE68A]/80">{detail.label}</p>
+                      {detail.href ? (
+                        <a
+                          href={detail.href}
+                          className="text-sm font-semibold text-white transition-colors duration-200 hover:text-[#FACC15]"
+                        >
+                          {detail.value}
+                        </a>
+                      ) : (
+                        <p className="text-sm font-semibold text-white">{detail.value}</p>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>

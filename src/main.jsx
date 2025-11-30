@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Layout from '../Layout.jsx';
+import Layout from '../Components/Layout.jsx';
 import Home from '../Pages/Home.jsx';
 import Events from '../Pages/Events.jsx';
 import Transport from '../Pages/Transport.jsx';

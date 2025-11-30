@@ -41,9 +41,8 @@ Outputs are written to the `dist/` directory. Serve them via any static host.
 
 ### Folder Highlights
 
-- `Components/` – UI building blocks including Header, EventsMap, TransportPlanner, Gallery, and Chatbot.
+- `Components/` – UI building blocks including Header, EventsMap, TransportPlanner, Gallery, Layout, and Chatbot.
 - `Pages/Home.jsx` – Home view composing the main sections.
-- `Layout.jsx` – Language provider wrapper and layout shell.
   
 ### Chatbot Setup
 

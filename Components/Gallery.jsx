@@ -86,22 +86,20 @@ export default function Gallery() {
   return (
     <section id="gallery" className="py-12 md:py-20 bg-white">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4" style={{ color: '#800000' }}>
-            {t('galleryTitle')}
-          </h2>
-          <div className="w-24 h-1 bg-[#DAA520] mx-auto rounded-full"></div>
-          {cloudName && galleryTag && (
-            <p className="mt-4 text-sm text-gray-500">
-              Cloudinary tag: <span className="font-semibold">{galleryTag}</span>
-            </p>
-          )}
-          {error && (
-            <p className="mt-4 text-sm text-red-600">
-              {error} — falling back to default gallery assets.
-            </p>
-          )}
-        </div>
+        {(cloudName && galleryTag) || error ? (
+          <div className="mb-6 text-center text-sm">
+            {cloudName && galleryTag && (
+              <p className="text-gray-500">
+                Cloudinary tag: <span className="font-semibold">{galleryTag}</span>
+              </p>
+            )}
+            {error && (
+              <p className="mt-2 text-red-600">
+                {error} — falling back to default gallery assets.
+              </p>
+            )}
+          </div>
+        ) : null}
 
         <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
           {images.map((img, idx) => (

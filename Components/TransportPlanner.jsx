@@ -39,15 +39,6 @@ export default function TransportPlanner() {
   return (
     <section id="transport" className="py-12 md:py-20 bg-gray-50">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4" style={{ color: '#800000' }}>
-            {t('transportTitle')}
-          </h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Plan your journey between venues with real-time estimates.
-          </p>
-        </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start max-w-5xl mx-auto">
           {/* Form */}
           <Card className="border-t-4 border-t-[#DAA520]">

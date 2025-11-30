@@ -5,7 +5,7 @@ import { Menu, Globe, X } from 'lucide-react';
 import { Button } from './ui.jsx';
 
 export default function Header() {
-  const { language, toggleLanguage, t } = useLanguage();
+  const { language, languageLabel, toggleLanguage, t } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
@@ -25,13 +25,13 @@ export default function Header() {
         </div>
 
         {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-6">
+        <nav className="hidden md:flex items-center gap-8">
           {navItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
               className={({ isActive }) =>
-                `text-sm font-medium transition-colors ${
+                `text-base font-semibold tracking-wide transition-colors ${
                   isActive ? 'text-[#DAA520]' : 'text-white hover:text-[#DAA520]'
                 }`
               }
@@ -50,7 +50,7 @@ export default function Header() {
             className="text-white hover:text-[#DAA520] hover:bg-white/10 gap-2"
           >
             <Globe className="w-4 h-4" />
-            <span className="uppercase font-bold">{language}</span>
+            <span className="font-bold tracking-wide">{languageLabel}</span>
           </Button>
 
           {/* Mobile Menu */}
