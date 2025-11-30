@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, Send, X, RefreshCw } from 'lucide-react';
 import { Button, Input } from './ui';
 import { useLanguage } from './DasaraContext';
-import { base44 } from '../api/base44Client';
 
 export default function Chatbot() {
   const { t, language } = useLanguage();
@@ -36,6 +35,86 @@ export default function Chatbot() {
     });
   }, [language]);
 
+  const sendPromptToGemini = async ({ userMessage, languageCode, history }) => {
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY?.trim();
+
+    if (!apiKey) {
+      throw new Error('missing-api-key');
+    }
+
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+    const systemInstruction = {
+      role: 'system',
+      parts: [{
+        text: 'You are "Dasara Mitra", a warm and cultural festival guide for Mysuru Dasara. Always greet with "Namaskara" in the user\'s language, respond with factual event, transport, or history details, and keep answers under 100 words.'
+      }]
+    };
+
+    const trimmedHistory = history
+      .filter((entry, index) => !(index === 0 && entry.role === 'assistant'))
+      .slice(-6)
+      .map((entry) => ({
+        role: entry.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: entry.content }]
+      }));
+
+    const languageHint = languageCode === 'kn' ? 'Kannada' : 'English';
+
+    const contents = [
+      ...trimmedHistory,
+      {
+        role: 'user',
+        parts: [{ text: `Language: ${languageHint}\n${userMessage || 'Namaskara'}` }]
+      }
+    ];
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        contents,
+        system_instruction: systemInstruction,
+        generation_config: {
+          temperature: languageCode === 'kn' ? 0.7 : 0.6,
+          top_p: 0.95,
+          top_k: 40
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const details = await response.json().catch(() => ({}));
+      const message = details?.error?.message || response.statusText || 'Gemini request failed';
+      throw new Error(message);
+    }
+
+    const data = await response.json();
+    if (data?.promptFeedback?.blockReason) {
+      const reason = data.promptFeedback.blockReason;
+      throw new Error(`blocked:${reason}`);
+    }
+
+    const candidate = data?.candidates?.[0];
+
+    if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
+      throw new Error(`blocked:${candidate.finishReason}`);
+    }
+
+    const reply = candidate?.content?.parts
+      ?.map((part) => part.text?.trim())
+      .filter(Boolean)
+      .join('\n');
+
+    if (!reply) {
+      throw new Error('empty-response');
+    }
+
+    return reply;
+  };
+
   const handleSend = async (e) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -47,28 +126,30 @@ export default function Chatbot() {
 
     try {
       // Construct a prompt that includes context
-      const prompt = `
-        You are "Dasara Mitra", a helpful AI guide for the Mysore Dasara festival.
-        Current User Language: ${language === 'kn' ? 'Kannada' : 'English'}.
-        User Query: "${userMsg}".
-        
-        Instructions:
-        1. Respond concisely in the requested language (Kannada script for Kannada, English for English).
-        2. Be warm and cultural ("Namaskara").
-        3. Provide info on events, transport, or history if asked.
-        4. If asked about specific events, mention Jambo Savari or Palace Lighting.
-        5. Keep response under 100 words.
-      `;
-
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: prompt,
-        add_context_from_internet: true // To get real Dasara info
+      const reply = await sendPromptToGemini({
+        userMessage: userMsg,
+        languageCode: language,
+        history: messages
       });
 
-      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
     } catch (error) {
       console.error("Chat error:", error);
-      setMessages(prev => [...prev, { role: 'assistant', content: t('error') }]);
+      const problem = error?.message || '';
+
+      if (problem === 'missing-api-key') {
+        setMessages(prev => [...prev, { role: 'assistant', content: 'Chat configuration is missing. Please add your Google Gemini API key.' }]);
+      } else if (problem === 'empty-response') {
+        setMessages(prev => [...prev, { role: 'assistant', content: 'I could not find festival details right now. Try asking again in a moment.' }]);
+      } else if (problem.startsWith('blocked:')) {
+        const reason = problem.split(':')[1] || 'safety';
+        setMessages(prev => [...prev, { role: 'assistant', content: `I could not answer that request due to safety filters (${reason}). Please try asking in another way.` }]);
+      } else {
+        const friendlyMessage = problem
+          ? `${t('error')} (${problem})`
+          : t('error');
+        setMessages(prev => [...prev, { role: 'assistant', content: friendlyMessage }]);
+      }
     } finally {
       setIsLoading(false);
     }

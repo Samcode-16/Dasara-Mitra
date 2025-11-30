@@ -44,7 +44,11 @@ Outputs are written to the `dist/` directory. Serve them via any static host.
 - `Components/` – UI building blocks including Header, EventsMap, TransportPlanner, Gallery, and Chatbot.
 - `Pages/Home.jsx` – Home view composing the main sections.
 - `Layout.jsx` – Language provider wrapper and layout shell.
-- `api/base44Client.js` – Mocked LLM client stub for the chatbot.
+  
+### Chatbot Setup
+
+- Create a `.env` file (copy from `.env.example`) and provide `VITE_GEMINI_API_KEY` with your Google AI Studio (Gemini) key.
+- The in-app assistant calls Gemini Flash directly from the browser, so keep your key scoped and rotate it if ever exposed.
 
 ### Notes
 

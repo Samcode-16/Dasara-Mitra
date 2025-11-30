@@ -20,10 +20,11 @@ function DasaraApp() {
       <section id="home" className="relative h-[80vh] md:h-[90vh] flex items-center justify-center text-center text-white overflow-hidden">
         {/* Background Image with Overlay */}
         <div className="absolute inset-0 z-0">
-          <img 
-            src="https://images.unsplash.com/photo-1582555682861-a8a7d36f8e3e?q=80&w=2000&auto=format&fit=crop" 
-            alt="Mysore Palace" 
+          <img
+            src="/images/gallery/dasara-palace.jpg"
+            alt="Mysore Palace during Dasara"
             className="w-full h-full object-cover"
+            loading="lazy"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-[#800000]/90"></div>
         </div>
