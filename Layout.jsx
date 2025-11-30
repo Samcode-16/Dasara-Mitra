@@ -1,12 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { MapPin, Route, Camera, CalendarDays } from 'lucide-react';
 import Header from './Components/Header.jsx';
 import Chatbot from './Components/Chatbot.jsx';
 import { Button } from './Components/ui';
 import { useLanguage, LanguageProvider } from './Components/DasaraContext.jsx';
 
 function LayoutContent({ children }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const discoverLinks = [
     { label: t('events'), href: '/events' },
@@ -18,6 +19,45 @@ function LayoutContent({ children }) {
     { label: t('ctaEvents'), href: '/events#events' },
     { label: t('ctaGallery'), href: '/gallery' },
     { label: t('findRoute'), href: '/transport' }
+  ];
+
+  const highlightCards = [
+    {
+      icon: MapPin,
+      title: t('eventsTitle'),
+      description:
+        language === 'kn'
+          ? 'ನಗರದಲ್ಲಿ ನಡೆಯುವ ದಸರಾ ಕಾರ್ಯಕ್ರಮಗಳನ್ನು ಸುಲಭವಾಗಿ ಪತ್ತೆ ಹಚ್ಚಿ.'
+          : 'Pin every Mysuru celebration and dive into the royal schedule.',
+      href: '/events'
+    },
+    {
+      icon: Route,
+      title: t('transportTitle'),
+      description:
+        language === 'kn'
+          ? 'ಮೆರವಣಿಗೆ ದಾರಿಗಳ ಬದಲಾವಣೆ ಮತ್ತು ಶಟಲ್ ಆಯ್ಕೆಗಳನ್ನು ಯೋಜಿಸಿ.'
+          : 'Plan diversions, shuttles, and festival commutes with confidence.',
+      href: '/transport'
+    },
+    {
+      icon: Camera,
+      title: t('galleryTitle'),
+      description:
+        language === 'kn'
+          ? 'ಅರಮನೆ ಬೆಳಕು ಮತ್ತು ಸಾಂಸ್ಕೃತಿಕ ಕ್ಷಣಗಳನ್ನು ಮರು ಅನುಭವಿಸಿ.'
+          : 'Relive palace illuminations and cultural memories on demand.',
+      href: '/gallery'
+    },
+    {
+      icon: CalendarDays,
+      title: language === 'kn' ? 'ದಿನವಾರ ಹಬ್ಬದ ಹೊಳೆ' : 'Daily Festival Flow',
+      description:
+        language === 'kn'
+          ? 'ಪ್ರತಿ ದಿನದ ಸಂಭವಗಳನ್ನು ತಿಳಿದು ವಿಶೇಷ ಕ್ಷಣಗಳನ್ನು ತಪ್ಪಿಸಿಕೊಳ್ಳಬೇಡಿ.'
+          : 'Stay ahead of the day-wise highlights and never miss a spectacle.',
+      href: '/events#events'
+    }
   ];
 
   return (
@@ -34,6 +74,37 @@ function LayoutContent({ children }) {
         </div>
 
         <div className="relative container mx-auto px-4 py-14">
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            {highlightCards.map((card) => (
+              <Link
+                key={card.title}
+                to={card.href}
+                className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-5 shadow-lg transition-transform duration-300 hover:-translate-y-1 hover:shadow-2xl"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <div className="relative flex items-start gap-4">
+                  <span className="rounded-xl border border-[#FACC15]/40 bg-black/20 p-3 text-[#FACC15] shadow-inner shadow-black/30">
+                    <card.icon className="h-5 w-5" />
+                  </span>
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold uppercase tracking-wide text-[#FACC15]/90">
+                      {card.title}
+                    </p>
+                    <p className="text-xs leading-relaxed text-slate-100/80">
+                      {card.description}
+                    </p>
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#FDE68A]">
+                      {language === 'kn' ? 'ಇನ್ನಷ್ಟು ಅನ್ವೇಷಿಸಿ' : 'Explore'}
+                      <span aria-hidden="true">→</span>
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          <div className="my-10 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+
           <div className="grid gap-10 lg:grid-cols-[1.6fr,1fr,1fr]">
             <div className="space-y-6">
               <span className="inline-flex h-12 w-12 items-center justify-center rounded-xl border border-[#FACC15]/60 bg-[#7F1D1D]/80 text-lg font-semibold text-[#FACC15] shadow-lg shadow-[#0B1B3B]/40">

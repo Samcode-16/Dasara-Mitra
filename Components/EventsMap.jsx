@@ -70,9 +70,47 @@ export default function EventsMap() {
   const [routeClosures, setRouteClosures] = useState([]);
   const [showClosures, setShowClosures] = useState(true);
   const mapRef = useRef(null);
+  const mapContainerRef = useRef(null);
 
   useEffect(() => {
     calculateDistances(EVENTS_DATA, null); // Initial load without user location
+  }, []);
+
+  useEffect(() => {
+    if (typeof ResizeObserver === 'undefined') {
+      return undefined;
+    }
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const width = entry.contentRect.width;
+      const map = mapRef.current;
+      if (map) {
+        setTimeout(() => map.invalidateSize(), 100);
+      }
+
+      if (!mapContainerRef.current) return;
+
+      if (width < 400) {
+        mapContainerRef.current.style.minHeight = '320px';
+      } else if (width < 640) {
+        mapContainerRef.current.style.minHeight = '380px';
+      } else if (width < 768) {
+        mapContainerRef.current.style.minHeight = '420px';
+      } else if (width < 1024) {
+        mapContainerRef.current.style.minHeight = '480px';
+      } else {
+        mapContainerRef.current.style.minHeight = '540px';
+      }
+    });
+
+    if (mapContainerRef.current) {
+      mapContainerRef.current.style.minHeight = '540px';
+      resizeObserver.observe(mapContainerRef.current);
+    }
+
+    return () => resizeObserver.disconnect();
   }, []);
 
   const handleGetLocation = () => {
@@ -581,7 +619,10 @@ export default function EventsMap() {
           </div>
 
           {/* Map */}
-          <div className="lg:col-span-2 h-full rounded-xl overflow-hidden shadow-lg border border-gray-200 relative z-0">
+          <div
+            className="lg:col-span-2 h-full rounded-xl overflow-hidden shadow-lg border border-gray-200 relative z-0"
+            ref={mapContainerRef}
+          >
             <div className="absolute top-4 left-4 z-[1000] flex gap-2">
               <Button
                 variant="outline"
@@ -595,6 +636,7 @@ export default function EventsMap() {
             <MapContainer
               center={[12.3051, 76.6551]}
               zoom={13}
+              className="!h-full !w-full min-h-[320px]"
               style={{ height: '100%', width: '100%' }}
               whenCreated={(mapInstance) => {
                 mapRef.current = mapInstance;
