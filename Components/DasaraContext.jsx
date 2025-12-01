@@ -453,6 +453,22 @@ export const TRANSLATIONS = {
     send: "Send",
     loading: "Loading...",
     error: "Something went wrong.",
+    voiceAssistTitle: "Voice Navigator",
+    voiceAssistHint: "Tap the mic and ask about routes, events, or travel tips.",
+    voiceAssistListening: "Listening...",
+    voiceAssistProcessing: "Fetching answer...",
+    voiceAssistResponded: "Answer ready",
+    voiceAssistError: "Mic issue",
+    voiceAssistReady: "Tap to ask",
+    voiceAssistUnsupported: "Voice assistance is not supported in this browser.",
+    voiceAssistTranscriptLabel: "You asked",
+    voiceAssistPromptExample: "Ask: 'Where does Jamboo Savari start?'",
+    voiceAssistResponseLabel: "Assistant reply",
+    voiceAssistErrorDetail: "Unable to capture audio",
+    voiceAssistStopListening: "Stop",
+    voiceAssistTapToSpeak: "Tap to speak",
+    voiceAssistStopAudio: "Stop audio",
+    voiceAssistReplayAudio: "Replay audio",
     enableLocation: "Enable location to find events near you!",
     locationDenied: "Location access denied. Showing all events.",
     category: "Category",
@@ -491,6 +507,12 @@ export const TRANSLATIONS = {
     jambooStartLabel: "Mysuru Palace – Balarama Gate",
     jambooEndLabel: "Bannimantap Grounds",
     jambooRouteLabel: "Grand Procession Corridor",
+    processionRouteTitle: "Jamboo Savari Procession",
+    processionRouteSubtitle: "Mysore Palace to Bannimantap Grounds",
+    processionFocusCta: "Focus Route",
+    processionStopsHeading: "Route Landmarks",
+    processionStartingPoint: "Starting Point",
+    processionEndingPoint: "Ending Point",
     showClosures: "Show road blockages",
     hideClosures: "Hide road blockages",
     closuresTitle: "Road blockages",
@@ -555,6 +577,22 @@ export const TRANSLATIONS = {
     send: "ಕಳುಹಿಸಿ",
     loading: "ಲೋಡ್ ಆಗುತ್ತಿದೆ...",
     error: "ಏನೋ ತಪ್ಪಾಗಿದೆ.",
+    voiceAssistTitle: "ಧ್ವನಿ ಸಹಾಯಕ",
+    voiceAssistHint: "ಮೈಕ್ ಒತ್ತಿ ಮಾರ್ಗಗಳು ಅಥವಾ ಕಾರ್ಯಕ್ರಮಗಳ ಬಗ್ಗೆ ಕೇಳಿ.",
+    voiceAssistListening: "ಶ್ರವಣಿಸಲಾಗುತ್ತಿದೆ...",
+    voiceAssistProcessing: "ಉತ್ತರ ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ...",
+    voiceAssistResponded: "ಉತ್ತರ ಸಿದ್ಧ",
+    voiceAssistError: "ಮೈಕ್ ಸಮಸ್ಯೆ",
+    voiceAssistReady: "ಕೇಳಲು ಟ್ಯಾಪ್ ಮಾಡಿ",
+    voiceAssistUnsupported: "ಈ ಬ್ರೌಸರ್‌ನಲ್ಲಿ ಧ್ವನಿ ಸಹಾಯ ಲಭ್ಯವಿಲ್ಲ.",
+    voiceAssistTranscriptLabel: "ನೀವು ಕೇಳಿದದ್ದು",
+    voiceAssistPromptExample: "ಉದಾಹರಣೆ: 'ಜಂಬೂ ಸವಾರಿ ಎಲ್ಲಿಂದ ಆರಂಭವಾಗುತ್ತದೆ?'",
+    voiceAssistResponseLabel: "ಸಹಾಯಕನ ಉತ್ತರ",
+    voiceAssistErrorDetail: "ಧ್ವನಿಯನ್ನು ಸೆರೆಹಿಡಿಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+    voiceAssistStopListening: "ನಿಲ್ಲಿಸಿ",
+    voiceAssistTapToSpeak: "ಮಾತನಾಡಲು ಒತ್ತಿರಿ",
+    voiceAssistStopAudio: "ಧ್ವನಿ ನಿಲ್ಲಿಸಿ",
+    voiceAssistReplayAudio: "ಮತ್ತೆ ಕೇಳಿ",
     enableLocation: "ನಿಮ್ಮ ಹತ್ತಿರದ ಕಾರ್ಯಕ್ರಮಗಳನ್ನು ಹುಡುಕಲು ಸ್ಥಳ ಹಂಚಿಕೆಯನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿ!",
     locationDenied: "ಸ್ಥಳ ಪ್ರವೇಶ ನಿರಾಕರಿಸಲಾಗಿದೆ. ಎಲ್ಲಾ ಕಾರ್ಯಕ್ರಮಗಳನ್ನು ತೋರಿಸಲಾಗುತ್ತಿದೆ.",
     category: "ವರ್ಗ",
@@ -593,6 +631,12 @@ export const TRANSLATIONS = {
     jambooStartLabel: "ಮೈಸೂರು ಅರಮನೆ – ಬಾಲರಾಮ ಬಾಗಿಲು",
     jambooEndLabel: "ಬನ್ನಿಮಂಟಪ ಮೈದಾನ",
     jambooRouteLabel: "ದಸರಾ ಮೆರವಣಿಗೆ ಮಾರ್ಗ",
+    processionRouteTitle: "ಜಂಬೂ ಸವಾರಿ ಮೆರವಣಿಗೆ",
+    processionRouteSubtitle: "ಮೈಸೂರು ಅರಮನೆಯಿಂದ ಬನ್ನಿಮಂಟಪ ಮೈದಾನವರೆಗಿನ ಮಾರ್ಗ",
+    processionFocusCta: "ಮಾರ್ಗ ತೋರಿಸಿ",
+    processionStopsHeading: "ಪ್ರಮುಖ ಮಾರ್ಗ ಹಂತಗಳು",
+    processionStartingPoint: "ಆರಂಭಿಕ ಸ್ಥಳ",
+    processionEndingPoint: "ಅಂತಿಮ ಸ್ಥಳ",
     showClosures: "ರಸ್ತೆ ಬಂದ್ ಸ್ಥಳಗಳು",
     hideClosures: "ರಸ್ತೆ ಬಂದ್ ಮರೆಮಾಡಿ",
     closuresTitle: "ರಸ್ತೆ ಬಂದ್ ವಿವರಗಳು",
@@ -657,6 +701,22 @@ export const TRANSLATIONS = {
     send: "भेजें",
     loading: "लोड हो रहा है...",
     error: "कुछ गलत हो गया।",
+    voiceAssistTitle: "वॉयस सहायक",
+    voiceAssistHint: "माइक टैप करें और मार्ग या कार्यक्रमों के बारे में पूछें।",
+    voiceAssistListening: "सुन रहा है...",
+    voiceAssistProcessing: "उत्तर तैयार किया जा रहा है...",
+    voiceAssistResponded: "उत्तर तैयार है",
+    voiceAssistError: "माइक समस्या",
+    voiceAssistReady: "पूछने के लिए टैप करें",
+    voiceAssistUnsupported: "इस ब्राउज़र में वॉयस सहायता उपलब्ध नहीं है।",
+    voiceAssistTranscriptLabel: "आपने पूछा",
+    voiceAssistPromptExample: "उदाहरण: 'जम्बू सवारी कहाँ से शुरू होती है?'",
+    voiceAssistResponseLabel: "सहायक का उत्तर",
+    voiceAssistErrorDetail: "ध्वनि कैप्चर नहीं हो सकी",
+    voiceAssistStopListening: "रोकें",
+    voiceAssistTapToSpeak: "बोलने के लिए टैप करें",
+    voiceAssistStopAudio: "ध्वनि रोकें",
+    voiceAssistReplayAudio: "फिर से सुनें",
     enableLocation: "पास के कार्यक्रम खोजने के लिए स्थान सक्षम करें!",
     locationDenied: "स्थान पहुंच अस्वीकृत। सभी कार्यक्रम दिखाए जा रहे हैं।",
     category: "श्रेणी",
@@ -695,6 +755,12 @@ export const TRANSLATIONS = {
     jambooStartLabel: "मैसूरु पैलेस – बालारामा गेट",
     jambooEndLabel: "बन्नीमंतप मैदान",
     jambooRouteLabel: "भव्य जम्बू सवारी मार्ग",
+    processionRouteTitle: "जम्बू सवारी जुलूस",
+    processionRouteSubtitle: "मैसूरु पैलेस से बन्नीमंतप मैदान तक",
+    processionFocusCta: "मार्ग दिखाएँ",
+    processionStopsHeading: "मुख्य पड़ाव",
+    processionStartingPoint: "प्रारंभिक स्थान",
+    processionEndingPoint: "समाप्ति स्थान",
     showClosures: "सड़क अवरोध दिखाएँ",
     hideClosures: "सड़क अवरोध छिपाएँ",
     closuresTitle: "सड़क अवरोध",
@@ -716,18 +782,25 @@ const LANGUAGE_LABELS = {
 const LanguageContext = createContext();
 
 export const LanguageProvider = ({ children }) => {
-  const [language, setLanguage] = useState(SUPPORTED_LANGUAGES[0]);
+  const [language, setLanguageState] = useState(SUPPORTED_LANGUAGES[0]);
 
   const t = (key) => {
     return TRANSLATIONS[language][key] || key;
   };
 
   const toggleLanguage = () => {
-    setLanguage((prev) => {
+    setLanguageState((prev) => {
       const currentIndex = SUPPORTED_LANGUAGES.indexOf(prev);
       const nextIndex = (currentIndex + 1) % SUPPORTED_LANGUAGES.length;
       return SUPPORTED_LANGUAGES[nextIndex];
     });
+  };
+
+  const setLanguage = (nextLanguage) => {
+    if (!SUPPORTED_LANGUAGES.includes(nextLanguage)) {
+      return;
+    }
+    setLanguageState(nextLanguage);
   };
 
   return (
@@ -735,6 +808,7 @@ export const LanguageProvider = ({ children }) => {
       value={{
         language,
         toggleLanguage,
+         setLanguage,
         t,
         languageLabel: LANGUAGE_LABELS[language],
         supportedLanguages: SUPPORTED_LANGUAGES

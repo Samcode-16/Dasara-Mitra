@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, Send, X, RefreshCw } from 'lucide-react';
 import { Button, Input } from './ui.jsx';
 import { useLanguage } from './DasaraContext';
+import { askFestivalAssistant } from './assistantClient.js';
 
 const getAssistantGreeting = (lang) => {
   if (lang === 'kn') {
@@ -42,108 +43,6 @@ export default function Chatbot() {
     });
   }, [language]);
 
-  const sendPromptToGemini = async ({ userMessage, languageCode, history }) => {
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY?.trim();
-    
-    if (!apiKey) {
-      throw new Error('missing-api-key');
-    }
-
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-    const languageHints = {
-      en: 'English',
-      kn: 'Kannada',
-      hi: 'Hindi'
-    };
-    const languageHint = languageHints[languageCode] || 'English';
-
-    const namaskara = languageCode === 'hi'
-      ? 'नमस्कार'
-      : languageCode === 'kn'
-        ? 'ನಮಸ್ಕಾರ'
-        : 'Namaskara';
-
-    const systemInstruction = {
-      role: 'system',
-      parts: [{
-        text: `You are "Dasara Mitra", a helpful and warm cultural festival guide for Mysuru Dasara.
-
-LANGUAGE RULES:
-- The user's preferred language is ${languageHint}
-- Always respond in ${languageHint} regardless of input language
-- Kannada requests → Kannada script (ಕನ್ನಡ)
-- Hindi requests → Hindi script (देवनागरी)
-- English requests → English
-- Begin every reply with "${namaskara}" in the relevant script
-- Never refuse to answer due to language differences; be helpful
-
-CONTENT: Provide factual information about Mysuru Dasara events, transport, history, and cultural details. Keep responses under 100 words.`
-      }]
-    };
-
-    const trimmedHistory = history
-      .filter((entry, index) => !(index === 0 && entry.role === 'assistant'))
-      .slice(-6)
-      .map((entry) => ({
-        role: entry.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: entry.content }]
-      }));
-
-    const contents = [
-      ...trimmedHistory,
-      {
-        role: 'user',
-        parts: [{ text: `Language: ${languageHint}\n${userMessage || 'Namaskara'}` }]
-      }
-    ];
-
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        contents,
-        system_instruction: systemInstruction,
-        generation_config: {
-          temperature: languageCode === 'kn' ? 0.7 : languageCode === 'hi' ? 0.65 : 0.6,
-          top_p: 0.95,
-          top_k: 40
-        }
-      })
-    });
-
-    if (!response.ok) {
-      const details = await response.json().catch(() => ({}));
-      const message = details?.error?.message || response.statusText || 'Gemini request failed';
-      throw new Error(message);
-    }
-
-    const data = await response.json();
-    if (data?.promptFeedback?.blockReason) {
-      const reason = data.promptFeedback.blockReason;
-      throw new Error(`blocked:${reason}`);
-    }
-
-    const candidate = data?.candidates?.[0];
-
-    if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
-      throw new Error(`blocked:${candidate.finishReason}`);
-    }
-
-    const reply = candidate?.content?.parts
-      ?.map((part) => part.text?.trim())
-      .filter(Boolean)
-      .join('\n');
-
-    if (!reply) {
-      throw new Error('empty-response');
-    }
-
-    return reply;
-  };
-
   const handleSend = async (e) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -156,7 +55,7 @@ CONTENT: Provide factual information about Mysuru Dasara events, transport, hist
 
     try {
       // Construct a prompt that includes context
-      const reply = await sendPromptToGemini({
+      const reply = await askFestivalAssistant({
         userMessage: userMsg,
         languageCode: responseLanguage,
         history: messages

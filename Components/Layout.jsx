@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { MapPin, Route, Camera, CalendarDays, Phone, Mail, Clock } from 'lucide-react';
 import Header from './Header.jsx';
 import Chatbot from './Chatbot.jsx';
+import VoiceAssistant from './VoiceAssistant.jsx';
 import { Button } from './ui.jsx';
 import { useLanguage, LanguageProvider } from './DasaraContext.jsx';
 
@@ -81,6 +82,7 @@ function LayoutContent({ children }) {
       <Header />
       <main className="flex-1">{children}</main>
       <Chatbot />
+      <VoiceAssistant />
 
       <footer className="relative mt-12 border-t-4 border-[#800000] bg-gradient-to-br from-[#4C0519] via-[#7F1D1D] to-[#B45309] text-slate-100">
         <div className="absolute inset-0 overflow-hidden">

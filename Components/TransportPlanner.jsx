@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLanguage, EVENTS_DATA } from './DasaraContext';
 import { Card, CardContent, CardHeader, CardTitle, Button } from './ui.jsx';
 import { Bus, Car, Truck, Clock, IndianRupee, MapPin, RefreshCw } from 'lucide-react';
@@ -207,6 +207,58 @@ export default function TransportPlanner() {
     }, 1500);
   };
 
+  const buildRideCoordinates = (event) => {
+    if (!event) return null;
+    return {
+      name: getLocalizedEventName(event) || event.name,
+      latitude: event.lat,
+      longitude: event.lng
+    };
+  };
+
+  const pickup = buildRideCoordinates(fromEventDetails);
+  const drop = buildRideCoordinates(toEventDetails);
+
+  const olaUrl = useMemo(() => {
+    if (!pickup || !drop) return null;
+    try {
+      const url = new URL('https://book.olacabs.com/');
+      url.searchParams.set('pickup_name', pickup.name);
+      url.searchParams.set('pickup_lat', pickup.latitude);
+      url.searchParams.set('pickup_lng', pickup.longitude);
+      url.searchParams.set('drop_name', drop.name);
+      url.searchParams.set('drop_lat', drop.latitude);
+      url.searchParams.set('drop_lng', drop.longitude);
+      url.searchParams.set('utm_source', 'dasara_mitra');
+      return url.toString();
+    } catch (error) {
+      return null;
+    }
+  }, [pickup, drop]);
+
+  const uberUrl = useMemo(() => {
+    if (!pickup || !drop) return null;
+    try {
+      const url = new URL('https://m.uber.com/ul/');
+      url.searchParams.set('action', 'setPickup');
+      url.searchParams.set('pickup[latitude]', pickup.latitude);
+      url.searchParams.set('pickup[longitude]', pickup.longitude);
+      url.searchParams.set('pickup[nickname]', pickup.name);
+      url.searchParams.set('dropoff[latitude]', drop.latitude);
+      url.searchParams.set('dropoff[longitude]', drop.longitude);
+      url.searchParams.set('dropoff[nickname]', drop.name);
+      url.searchParams.set('productType', 'ride');
+      return url.toString();
+    } catch (error) {
+      return null;
+    }
+  }, [pickup, drop]);
+
+  const handleRideRedirect = (url) => {
+    if (!url) return;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <section id="transport" className="py-12 md:py-20 bg-gray-50">
       <div className="container mx-auto px-4">
@@ -281,88 +333,6 @@ export default function TransportPlanner() {
 
             {route && !loading && (
               <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h3 className="font-semibold text-lg text-gray-800 mb-4 flex items-center gap-2">
-                  {t('routeDetails')}
-                  <span className="text-xs font-normal text-gray-500 ml-auto">
-                    Approx {route.distance} km
-                  </span>
-                </h3>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  {[{
-                    label: t('fromEvent'),
-                    event: fromEventDetails,
-                    stops: fromStops
-                  }, {
-                    label: t('toEvent'),
-                    event: toEventDetails,
-                    stops: toStops
-                  }].map((section) => (
-                    <Card key={section.label} className="border border-dashed border-gray-200">
-                      <CardContent className="p-4 space-y-3">
-                        <div>
-                          <p className="text-xs uppercase tracking-wide text-gray-500">{section.label}</p>
-                          <p className="text-base font-semibold text-gray-900">
-                            {section.event ? getLocalizedEventName(section.event) : 'Select an event'}
-                          </p>
-                          {section.event?.description && (
-                            <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                              {section.event.description}
-                            </p>
-                          )}
-                        </div>
-
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
-                            Nearby bus stops
-                          </p>
-                          {renderStopList(section.stops)}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-                
-                {route.options.map((opt, idx) => (
-                  <Card key={idx} className="hover:shadow-md transition-all cursor-pointer active:scale-[0.99]">
-                    <CardContent className="p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className={`p-3 rounded-full ${
-                          opt.type === 'bus' ? 'bg-blue-100 text-blue-600' : 
-                          opt.type === 'taxi' ? 'bg-yellow-100 text-yellow-600' : 
-                          'bg-green-100 text-green-600'
-                        }`}>
-                          <opt.icon className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <p className="font-bold capitalize text-gray-800">{opt.type}</p>
-                          <p className="text-xs text-gray-500">Frequent service</p>
-                        </div>
-                      </div>
-                      
-                      <div className="text-right">
-                        <div className="flex items-center justify-end gap-1 font-bold text-[#800000]">
-                          <IndianRupee className="w-3 h-3" />
-                          {opt.cost}
-                        </div>
-                        <div className="flex items-center justify-end gap-1 text-sm text-gray-600">
-                          <Clock className="w-3 h-3" />
-                          {opt.duration} min
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-                
-                <div className="pt-4 flex gap-2">
-                    <Button variant="outline" className="flex-1 border-yellow-600 text-yellow-700">
-                        Book Ola
-                    </Button>
-                     <Button variant="outline" className="flex-1 border-black text-black">
-                        Book Uber
-                    </Button>
-                </div>
-
                 <div className="rounded-2xl border border-yellow-200 bg-yellow-50/60 p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
@@ -420,6 +390,64 @@ export default function TransportPlanner() {
                     </div>
                   )}
                 </div>
+
+                <h3 className="font-semibold text-lg text-gray-800 mb-4 flex items-center gap-2">
+                  {t('routeDetails')}
+                  <span className="text-xs font-normal text-gray-500 ml-auto">
+                    Approx {route.distance} km
+                  </span>
+                </h3>
+                
+                {route.options.map((opt, idx) => (
+                  <Card key={idx} className="hover:shadow-md transition-all cursor-pointer active:scale-[0.99]">
+                    <CardContent className="p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className={`p-3 rounded-full ${
+                          opt.type === 'bus' ? 'bg-blue-100 text-blue-600' : 
+                          opt.type === 'taxi' ? 'bg-yellow-100 text-yellow-600' : 
+                          'bg-green-100 text-green-600'
+                        }`}>
+                          <opt.icon className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <p className="font-bold capitalize text-gray-800">{opt.type}</p>
+                          <p className="text-xs text-gray-500">Frequent service</p>
+                        </div>
+                      </div>
+                      
+                      <div className="text-right">
+                        <div className="flex items-center justify-end gap-1 font-bold text-[#800000]">
+                          <IndianRupee className="w-3 h-3" />
+                          {opt.cost}
+                        </div>
+                        <div className="flex items-center justify-end gap-1 text-sm text-gray-600">
+                          <Clock className="w-3 h-3" />
+                          {opt.duration} min
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+                
+                <div className="pt-4 flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1 border-yellow-600 text-yellow-700"
+                    onClick={() => handleRideRedirect(olaUrl)}
+                    disabled={!olaUrl}
+                  >
+                    Book Ola
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1 border-black text-black"
+                    onClick={() => handleRideRedirect(uberUrl)}
+                    disabled={!uberUrl}
+                  >
+                    Book Uber
+                  </Button>
+                </div>
+
               </div>
             )}
           </div>

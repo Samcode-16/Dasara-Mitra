@@ -52,6 +52,26 @@ const finaleIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
+const routeCheckpointIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const jambbooRouteClosure = ROAD_CLOSURES.find((closure) => closure.id === 'closure-jamboo-route');
+const PROCESSION_ROUTE_POINTS = (jambbooRouteClosure?.path || []).map((point) => [point.lat, point.lng]);
+
+const PROCESSION_LANDMARKS = [
+  { id: 'mysore-palace', name: 'Mysore Palace', lat: 12.305163, lng: 76.6551749, type: 'start' },
+  { id: 'sayyaji-rao-road', name: 'Sayyaji Rao Road', lat: 12.30985, lng: 76.65696, type: 'waypoint' },
+  { id: 'kr-circle', name: 'K.R. Circle', lat: 12.30795, lng: 76.6559, type: 'waypoint' },
+  { id: 'chamaraja-double-road', name: 'Chamaraja Double Road', lat: 12.3174, lng: 76.6562, type: 'waypoint' },
+  { id: 'bannimantap-grounds', name: 'Bannimantap Grounds', lat: 12.3340167, lng: 76.6549883, type: 'end' }
+];
+
 export default function EventsMap() {
   const { t, language } = useLanguage();
   const [userLocation, setUserLocation] = useState(null);
@@ -674,6 +694,47 @@ export default function EventsMap() {
                 {showClosures ? t('hideClosures') : t('showClosures')}
               </Button>
             </div>
+            {PROCESSION_ROUTE_POINTS.length > 0 && (
+              <div className="absolute top-4 right-4 z-[1000] w-72 bg-white/95 border border-orange-200 rounded-xl shadow-lg p-4 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-[#B45309]">{t('processionRouteTitle')}</p>
+                    <p className="text-[11px] text-gray-600">{t('processionRouteSubtitle')}</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    className="text-[#B45309] border-[#F97316]/70 hover:bg-[#F97316]/15"
+                    onClick={() => {
+                      if (mapRef.current && PROCESSION_ROUTE_POINTS.length) {
+                        const bounds = L.latLngBounds(PROCESSION_ROUTE_POINTS);
+                        mapRef.current.fitBounds(bounds, { padding: [24, 24], maxZoom: 15 });
+                      }
+                    }}
+                  >
+                    {t('processionFocusCta')}
+                  </Button>
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-gray-500 font-semibold">
+                    {t('processionStopsHeading')}
+                  </p>
+                  <ol className="mt-2 space-y-2 text-xs text-gray-700 list-decimal list-inside">
+                    {PROCESSION_LANDMARKS.map((landmark) => (
+                      <li key={landmark.id} className="leading-tight">
+                        <p className="font-semibold text-gray-800">{landmark.name}</p>
+                        {landmark.type === 'start' && (
+                          <p className="text-[11px] text-green-600">{t('processionStartingPoint')}</p>
+                        )}
+                        {landmark.type === 'end' && (
+                          <p className="text-[11px] text-purple-600">{t('processionEndingPoint')}</p>
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              </div>
+            )}
             <MapContainer
               center={[12.3051, 76.6551]}
               zoom={13}
@@ -722,6 +783,44 @@ export default function EventsMap() {
                 </Marker>
               ))}
 
+              {PROCESSION_ROUTE_POINTS.length > 0 && (
+                <>
+                  <Polyline
+                    positions={PROCESSION_ROUTE_POINTS}
+                    pathOptions={{
+                      color: '#EA580C',
+                      weight: 8,
+                      opacity: 0.9,
+                      dashArray: '12 10',
+                      lineCap: 'round'
+                    }}
+                  />
+                  {PROCESSION_LANDMARKS.map((landmark) => {
+                    const icon = landmark.type === 'start'
+                      ? palaceIcon
+                      : landmark.type === 'end'
+                        ? finaleIcon
+                        : routeCheckpointIcon;
+                    return (
+                      <Marker key={landmark.id} position={[landmark.lat, landmark.lng]} icon={icon}>
+                        <Popup>
+                          <div className="text-sm text-center space-y-1">
+                            <p className="font-semibold text-[#B45309]">{landmark.name}</p>
+                            <p className="text-[11px] text-gray-600">
+                              {landmark.type === 'start'
+                                ? t('processionStartingPoint')
+                                : landmark.type === 'end'
+                                  ? t('processionEndingPoint')
+                                  : t('jambooRouteLabel')}
+                            </p>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    );
+                  })}
+                </>
+              )}
+
               {closuresToDisplay.map((closure) => (
                 <React.Fragment key={closure.id}>
                   <Circle
@@ -729,31 +828,11 @@ export default function EventsMap() {
                     radius={closure.radius}
                     pathOptions={{ color: '#DC2626', weight: 2, fillOpacity: 0.1 }}
                   />
-                  {closure.path && closure.path.length > 1 && (
+                  {closure.path && closure.path.length > 1 && closure.id !== 'closure-jamboo-route' && (
                     <Polyline
                       positions={closure.path.map((point) => [point.lat, point.lng])}
                       pathOptions={{ color: '#B91C1C', weight: 4, dashArray: '10 6', opacity: 0.9 }}
                     />
-                  )}
-                  {closure.id === 'closure-jamboo-route' && closure.path && closure.path.length > 1 && (
-                    <>
-                      <Marker position={[closure.path[0].lat, closure.path[0].lng]} icon={palaceIcon}>
-                        <Popup>
-                          <div className="text-sm text-center space-y-1">
-                            <p className="font-semibold text-[#1D4ED8]">{t('jambooStartLabel')}</p>
-                            <p className="text-[11px] text-gray-600">{t('jambooRouteLabel')}</p>
-                          </div>
-                        </Popup>
-                      </Marker>
-                      <Marker position={[closure.path[closure.path.length - 1].lat, closure.path[closure.path.length - 1].lng]} icon={finaleIcon}>
-                        <Popup>
-                          <div className="text-sm text-center space-y-1">
-                            <p className="font-semibold text-[#6B21A8]">{t('jambooEndLabel')}</p>
-                            <p className="text-[11px] text-gray-600">{t('jambooRouteLabel')}</p>
-                          </div>
-                        </Popup>
-                      </Marker>
-                    </>
                   )}
                   <Marker position={[closure.lat, closure.lng]} icon={closureIcon}>
                     <Popup>
