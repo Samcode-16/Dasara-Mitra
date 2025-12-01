@@ -76,10 +76,13 @@ const detectLanguageCommand = (text = '') => {
 
 const stripLanguageKeywords = (text = '', languageCode) => {
   const keywords = LANGUAGE_KEYWORDS[languageCode] || [];
-  return keywords.reduce((output, keyword) => {
-    const regex = new RegExp(keyword, 'ig');
-    return output.replace(regex, ' ');
-  }, text).replace(/\s+/g, ' ').trim();
+  return keywords
+    .reduce((output, keyword) => {
+      const regex = new RegExp(keyword, 'ig');
+      return output.replace(regex, ' ');
+    }, text)
+    .replace(/\s+/g, ' ')
+    .trim();
 };
 
 export default function VoiceAssistant() {
@@ -104,56 +107,60 @@ export default function VoiceAssistant() {
     historyRef.current = [{ role: 'assistant', content: greeting }];
   }, [language]);
 
-  const handleVoiceQuery = useCallback(async (spokenText) => {
-    const originalQuery = spokenText.trim();
-    if (!originalQuery) {
-      setStatus('idle');
-      return;
-    }
-    let workingQuery = originalQuery;
-    let responseLanguage = language;
-    const requestedLanguage = detectLanguageCommand(originalQuery);
+  const handleVoiceQuery = useCallback(
+    async (spokenText) => {
+      const originalQuery = spokenText.trim();
+      if (!originalQuery) {
+        setStatus('idle');
+        return;
+      }
 
-    if (requestedLanguage) {
-      responseLanguage = requestedLanguage;
-      changeLanguagePreference(requestedLanguage);
-      workingQuery = stripLanguageKeywords(workingQuery, requestedLanguage);
-    }
+      let workingQuery = originalQuery;
+      let responseLanguage = language;
+      const requestedLanguage = detectLanguageCommand(originalQuery);
 
-    const cleanedQuery = workingQuery.trim();
-    setTranscript(cleanedQuery || originalQuery);
-    setStatus('processing');
-    setError(null);
+      if (requestedLanguage) {
+        responseLanguage = requestedLanguage;
+        changeLanguagePreference(requestedLanguage);
+        workingQuery = stripLanguageKeywords(workingQuery, requestedLanguage);
+      }
 
-    const userHistoryContent = cleanedQuery || originalQuery;
-    const historyWithUser = [...historyRef.current, { role: 'user', content: userHistoryContent }];
+      const cleanedQuery = workingQuery.trim();
+      setTranscript(cleanedQuery || originalQuery);
+      setStatus('processing');
+      setError(null);
 
-    if (!cleanedQuery) {
-      const acknowledgement = LANGUAGE_ACKS[responseLanguage] || getVoiceGreeting(responseLanguage);
-      historyRef.current = [...historyWithUser, { role: 'assistant', content: acknowledgement }];
-      setAssistantReply(acknowledgement);
-      setStatus('responded');
-      speakResponse(acknowledgement, SPEECH_LOCALES[responseLanguage] || locale, setIsSpeaking);
-      return;
-    }
+      const userHistoryContent = cleanedQuery || originalQuery;
+      const historyWithUser = [...historyRef.current, { role: 'user', content: userHistoryContent }];
 
-    try {
-      const reply = await askFestivalAssistant({
-        userMessage: cleanedQuery,
-        languageCode: responseLanguage,
-        history: historyWithUser
-      });
-      const updatedHistory = [...historyWithUser, { role: 'assistant', content: reply }];
-      historyRef.current = updatedHistory;
-      setAssistantReply(reply);
-      setStatus('responded');
-      speakResponse(reply, SPEECH_LOCALES[responseLanguage] || locale, setIsSpeaking);
-    } catch (err) {
-      const message = err?.message || 'voice-error';
-      setError(message);
-      setStatus('error');
-    }
-  }, [language, locale, changeLanguagePreference]);
+      if (!cleanedQuery) {
+        const acknowledgement = LANGUAGE_ACKS[responseLanguage] || getVoiceGreeting(responseLanguage);
+        historyRef.current = [...historyWithUser, { role: 'assistant', content: acknowledgement }];
+        setAssistantReply(acknowledgement);
+        setStatus('responded');
+        speakResponse(acknowledgement, SPEECH_LOCALES[responseLanguage] || locale, setIsSpeaking);
+        return;
+      }
+
+      try {
+        const reply = await askFestivalAssistant({
+          userMessage: cleanedQuery,
+          languageCode: responseLanguage,
+          history: historyWithUser
+        });
+        const updatedHistory = [...historyWithUser, { role: 'assistant', content: reply }];
+        historyRef.current = updatedHistory;
+        setAssistantReply(reply);
+        setStatus('responded');
+        speakResponse(reply, SPEECH_LOCALES[responseLanguage] || locale, setIsSpeaking);
+      } catch (err) {
+        const message = err?.message || 'voice-error';
+        setError(message);
+        setStatus('error');
+      }
+    },
+    [language, locale, changeLanguagePreference]
+  );
 
   useEffect(() => {
     const SpeechRecognition = getSpeechRecognition();

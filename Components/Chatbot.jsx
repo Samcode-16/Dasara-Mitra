@@ -84,6 +84,10 @@ export default function Chatbot() {
     }
   };
 
+  const closeChat = () => {
+    setIsOpen(false);
+  };
+
   return (
     <>
       {/* Trigger Button */}
@@ -110,7 +114,7 @@ export default function Chatbot() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setIsOpen(false)}
+              onClick={closeChat}
               className="text-white hover:bg-white/20"
               aria-label="Close chat"
             >

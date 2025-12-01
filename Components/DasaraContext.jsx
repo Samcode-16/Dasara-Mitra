@@ -132,8 +132,8 @@ export const EVENTS_DATA = [
     name: "Poets' Conference (Kavi Goshti)",
     name_kn: "ಕವಿ ಗೋಷ್ಠಿ",
     name_hi: "कवि गोष्ठी",
-    lat: 12.3040,
-    lng: 76.6530,
+    lat: 12.331587841459568,
+    lng: 76.61815955019668,
     description: "Gathering of renowned poets and literature lovers.",
     description_kn: "ಪ್ರಖ್ಯಾತ ಕವಿಗಳು ಮತ್ತು ಸಾಹಿತ್ಯ ಪ್ರೇಮಿಗಳ ಸಭೆ.",
     description_hi: "प्रसिद्ध कवियों और साहित्य प्रेमियों का मिलन।",
@@ -258,8 +258,8 @@ export const EVENTS_DATA = [
     name: "Vintage Car Rally",
     name_kn: "ವಿಂಟೇಜ್ ಕಾರು ರ‍್ಯಾಲಿ",
     name_hi: "विंटेज कार रैली",
-    lat: 12.3091,
-    lng: 76.6577,
+    lat: 12.3051,
+    lng: 76.6551,
     description: "Classic cars parade from the palace to Lalitha Mahal with live commentary.",
     description_kn: "ಅರಮನೆದಿಂದ ಲಲಿತಾ ಮಹಲ್‌ವರೆಗೆ ವಿಂಟೇಜ್ ಕಾರುಗಳ ಮೆರವಣಿಗೆ ಮತ್ತು ಸಜೀವ ವಿವರಣೆ.",
     description_hi: "महल से ललिता महल तक विंटेज कारों की परेड लाइव कॉमेंट्री के साथ।",
@@ -294,8 +294,8 @@ export const EVENTS_DATA = [
     name: "Folk Dance Utsav",
     name_kn: "ಜನಪದ ನೃತ್ಯ ಉತ್ಸವ",
     name_hi: "लोक नृत्य उत्सव",
-    lat: 12.3121,
-    lng: 76.6469,
+    lat: 12.310862833453944,
+    lng: 76.66261409207135,
     description: "Teams from across Karnataka perform vibrant folk dances at Town Hall.",
     description_kn: "ಕರ್ನಾಟಕದ ವಿವಿಧ ತಂಡಗಳು ಟೌನ್ ಹಾಲ್‌ನಲ್ಲಿ ಚೆಲುವಾದ ಜನಪದ ನೃತ್ಯ ಪ್ರದರ್ಶನ ನೀಡುತ್ತವೆ.",
     description_hi: "कर्नाटक भर की टीमें टाउन हॉल में रंगीन लोक नृत्य प्रस्तुत करती हैं।",
@@ -312,8 +312,8 @@ export const EVENTS_DATA = [
     name: "Adventure Sports Zone",
     name_kn: "ಸಾಹಸ ಕ್ರೀಡೆ ವಲಯ",
     name_hi: "एडवेंचर स्पोर्ट्स ज़ोन",
-    lat: 12.2995,
-    lng: 76.6672,
+    lat: 12.276707637748268,
+    lng: 76.67075573202106,
     description: "Ziplining, wall climbing, and obstacle courses at Chamundi Vihar Stadium.",
     description_kn: "ಚಾಮುಂಡಿ ವಿಹಾರ ಕ್ರೀಡಾಂಗಣದಲ್ಲಿ ಜಿಪ್‌ಲೈನ್, ಗೋಡೆ ಏರಿಕೆ ಮತ್ತು ಅಡೆತಡೆ ಆಟಗಳು.",
     description_hi: "चामुंडी विहार स्टेडियम में ज़िपलाइन, वॉल क्लाइम्ब और बाधा पाठ्यक्रम।",
@@ -326,6 +326,83 @@ export const EVENTS_DATA = [
     ageGroup_hi: 'युवा'
   }
 ];
+
+const EVENT_VENUE_MAP = {
+  1: {
+    venue: 'Mysuru Palace to Bannimantap Grounds',
+    nearbyStops: ['palace bus stop', 'bannimantap depot out gate']
+  },
+  2: {
+    venue: 'Torch Light Parade Grounds, Bannimantap',
+    nearbyStops: ['bannimantap depot out gate', 'city bus stand']
+  },
+  3: {
+    venue: 'Mysuru Palace Forecourt',
+    nearbyStops: ['palace bus stop', 'hardinge circle']
+  },
+  4: {
+    venue: 'Dasara Exhibition Grounds (Doddakere Maidan)',
+    nearbyStops: ['mysore rural bus stand', 'palace bus stop']
+  },
+  5: {
+    venue: 'Kuppanna Park',
+    nearbyStops: ['five light circle', 'nanju malige', 'hardinge circle']
+  },
+  6: {
+    venue: "Maharaja's College Grounds",
+    nearbyStops: ['maharani college', 'railway station', 'kr hospital']
+  },
+  7: {
+    venue: 'Exhibition Authority Premises',
+    nearbyStops: ['palace bus stop', 'mysore rural bus stand']
+  },
+  8: {
+    venue: 'Kannada Sahitya Parishat, Chamaraja Double Road',
+    nearbyStops: ['dasappa circle', 'vani vilas water works', 'city bus stand']
+  },
+  9: {
+    venue: "Maharaja's College Grounds",
+    nearbyStops: ['maharani college', 'railway station']
+  },
+  10: {
+    venue: 'Mysuru Palace Cultural Stage',
+    nearbyStops: ['palace bus stop', 'hardinge circle']
+  },
+  11: {
+    venue: 'Torch Light Parade Grounds (Bannimantap)',
+    nearbyStops: ['bannimantap depot out gate', 'city bus stand']
+  },
+  12: {
+    venue: 'Sayyaji Rao Road & Devaraja Market Precinct',
+    nearbyStops: ['dodda gadiyara', 'city bus stand', 'dasappa circle']
+  },
+  14: {
+    venue: 'Kote Anjaneya Swamy Temple, Palace Fort',
+    nearbyStops: ['palace bus stop', 'hardinge circle']
+  },
+  15: {
+    venue: 'Mysuru Palace Forecourt',
+    nearbyStops: ['palace bus stop', 'hardinge circle']
+  },
+  16: {
+    venue: 'Eastern Lawns, Mysuru Palace',
+    nearbyStops: ['palace bus stop', 'hardinge circle']
+  },
+  17: {
+    venue: 'Town Hall Steps & Ramaswamy Circle',
+    nearbyStops: ['ramaswamy circle', 'ashoka circle', 'rto']
+  },
+  18: {
+    venue: 'Chamundi Vihar Stadium & Foothills',
+    nearbyStops: ['mysore zoo', 'chamundipuram', 'chamundi hill']
+  }
+};
+
+EVENTS_DATA.forEach((event) => {
+  if (EVENT_VENUE_MAP[event.id]) {
+    Object.assign(event, EVENT_VENUE_MAP[event.id]);
+  }
+});
 
 export const ROAD_CLOSURES = [
   {
@@ -481,6 +558,13 @@ export const TRANSLATIONS = {
     routeUnavailable: "Route unavailable right now. Please try again in a moment.",
     routeReady: "Walking route ready",
     clearRoute: "Clear Route",
+    busSupportTitle: "Nearby KSRTC city buses",
+    busSupportSubtitle: "Use these stops closest to the venue.",
+    busLoadingStatus: "Mapping stops...",
+    busErrorStatus: "Unable to load the city bus network right now.",
+    busListLabel: "Buses",
+    busNoStops: "No mapped city stops yet.",
+    eventVenueLabel: "Venue",
     searchPlaceholder: "Search events or categories...",
     clearSearch: "Clear",
     dayFilterLabel: "Filter by day",
@@ -607,6 +691,13 @@ export const TRANSLATIONS = {
     routeUnavailable: "ಈ ಕ್ಷಣ ಮಾರ್ಗ ಲಭ್ಯವಿಲ್ಲ. ದಯವಿಟ್ಟು ಸ್ವಲ್ಪ ನಂತರ ಪ್ರಯತ್ನಿಸಿ.",
     routeReady: "ನಡೆದಾಡಲು ಸೂಕ್ತ ಮಾರ್ಗ ಸಿದ್ಧವಾಗಿದೆ",
     clearRoute: "ಮಾರ್ಗವನ್ನು ಅಳಿಸಿ",
+    busSupportTitle: "ಹತ್ತಿರದ KSRTC ನಗರ ಬಸ್ಸುಗಳು",
+    busSupportSubtitle: "ಕಾರ್ಯಕ್ರಮ ಸ್ಥಳಕ್ಕೆ ಹತ್ತಿರದ ನಿಲ್ದಾಣಗಳನ್ನು ಬಳಸಿ.",
+    busLoadingStatus: "ನಿಲ್ದಾಣಗಳನ್ನು ಹೊಂದಿಸಲಾಗುತ್ತಿದೆ...",
+    busErrorStatus: "ಈ ಕ್ಷಣ ಬಸ್ ಜಾಲದ ಮಾಹಿತಿ ಲಭ್ಯವಿಲ್ಲ.",
+    busListLabel: "ಬಸ್ಸುಗಳು",
+    busNoStops: "ನಿಲ್ದಾಣಗಳ ಮಾಹಿತಿಯನ್ನು ಇನ್ನೂ ಸೇರಿಸಲಾಗಿಲ್ಲ.",
+    eventVenueLabel: "ಸ್ಥಳ",
     searchPlaceholder: "ಕಾರ್ಯಕ್ರಮಗಳು ಅಥವಾ ವರ್ಗಗಳನ್ನು ಹುಡುಕಿ...",
     clearSearch: "ಅಳಿಸಿ",
     dayFilterLabel: "ದಿನ ಯಾವುದು?",
@@ -733,6 +824,13 @@ export const TRANSLATIONS = {
     routeUnavailable: "अभी मार्ग उपलब्ध नहीं है। कृपया कुछ देर बाद प्रयास करें।",
     routeReady: "पैदल मार्ग तैयार",
     clearRoute: "मार्ग हटाएँ",
+    busSupportTitle: "निकटतम KSRTC सिटी बसें",
+    busSupportSubtitle: "कार्यक्रम स्थल के सबसे पास के स्टॉप का उपयोग करें।",
+    busLoadingStatus: "स्टॉप जोड़े जा रहे हैं...",
+    busErrorStatus: "अभी बस नेटवर्क उपलब्ध नहीं है।",
+    busListLabel: "बसें",
+    busNoStops: "कोई स्टॉप मैप नहीं किए गए।",
+    eventVenueLabel: "स्थान",
     searchPlaceholder: "कार्यक्रम या श्रेणी खोजें...",
     clearSearch: "साफ करें",
     dayFilterLabel: "दिन से फ़िल्टर करें",

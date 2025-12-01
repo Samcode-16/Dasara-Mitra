@@ -61,15 +61,71 @@ const routeCheckpointIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
+// Function to get road-following route between waypoints
+const getProcessionRoute = async () => {
+  const palaceStart = {lat: 12.304109, lng: 76.655382};
+  const palaceEnd = {lat: 12.307085, lng: 76.655606};
+  
+  const palaceRoute = [];
+  for (let i = 0; i <= 4; i++) {
+    const ratio = i / 4;
+    const lat = palaceStart.lat + (palaceEnd.lat - palaceStart.lat) * ratio;
+    const lng = palaceStart.lng + (palaceEnd.lng - palaceStart.lng) * ratio;
+    palaceRoute.push([lat, lng]);
+  }
+
+  const roadWaypoints = [
+    {lat: 12.307085, lng: 76.655606},
+    {lat: 12.308720, lng: 76.653152},
+    {lat: 12.314528, lng: 76.651248},
+    {lat: 12.319132, lng: 76.648450},
+    {lat: 12.324061, lng: 76.645220},
+    {lat: 12.332126, lng: 76.649626},
+    {lat: 12.332424, lng: 76.654509}
+  ];
+
+  try {
+    // Use OSRM only for road section
+    const waypointsStr = roadWaypoints
+      .map(point => `${point.lng},${point.lat}`)
+      .join(';');
+    
+    const url = `https://router.project-osrm.org/route/v1/walking/${waypointsStr}?overview=full&geometries=geojson&steps=false`;
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error('Routing service unavailable');
+    }
+
+    const data = await response.json();
+    
+    if (!data.routes || !data.routes.length) {
+      throw new Error('No route found');
+    }
+
+    // Combine palace straight line + road route
+    const roadCoordinates = data.routes[0].geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+    const fullRoute = [...palaceRoute, ...roadCoordinates];
+    return fullRoute;
+  } catch (error) {
+    console.error('Error fetching procession route:', error);
+    // Fallback to original path if routing fails
+    const jambbooRouteClosure = ROAD_CLOSURES.find((closure) => closure.id === 'closure-jamboo-route');
+    return (jambbooRouteClosure?.path || []).map((point) => [point.lat, point.lng]);
+  }
+};
+
+// Initialize with fallback route
 const jambbooRouteClosure = ROAD_CLOSURES.find((closure) => closure.id === 'closure-jamboo-route');
-const PROCESSION_ROUTE_POINTS = (jambbooRouteClosure?.path || []).map((point) => [point.lat, point.lng]);
+let PROCESSION_ROUTE_POINTS = (jambbooRouteClosure?.path || []).map((point) => [point.lat, point.lng]);
 
 const PROCESSION_LANDMARKS = [
-  { id: 'mysore-palace', name: 'Mysore Palace', lat: 12.305163, lng: 76.6551749, type: 'start' },
-  { id: 'sayyaji-rao-road', name: 'Sayyaji Rao Road', lat: 12.30985, lng: 76.65696, type: 'waypoint' },
-  { id: 'kr-circle', name: 'K.R. Circle', lat: 12.30795, lng: 76.6559, type: 'waypoint' },
-  { id: 'chamaraja-double-road', name: 'Chamaraja Double Road', lat: 12.3174, lng: 76.6562, type: 'waypoint' },
-  { id: 'bannimantap-grounds', name: 'Bannimantap Grounds', lat: 12.3340167, lng: 76.6549883, type: 'end' }
+  { id: 'mysore-palace', name: 'Mysore Palace', lat: 12.3039, lng: 76.6547, type: 'start' },
+  { id: 'albert-road', name: 'Albert Road', lat: 12.3066, lng: 76.6569, type: 'waypoint' },
+  { id: 'kr-circle', name: 'K.R. Circle', lat: 12.3120, lng: 76.6543, type: 'waypoint' },
+  { id: 'sayyaji-rao-road', name: 'Sayyaji Rao Road', lat: 12.3101, lng: 76.6584, type: 'waypoint' },
+  { id: 'nelson-mandela-road', name: 'Nelson Mandela Road', lat: 12.3207, lng: 76.6555, type: 'waypoint' },
+  { id: 'bannimantap-grounds', name: 'Bannimantap Grounds', lat: 12.334, lng: 76.655, type: 'end' }
 ];
 
 export default function EventsMap() {
@@ -78,6 +134,7 @@ export default function EventsMap() {
   const [nearestEvents, setNearestEvents] = useState([]);
   const [permissionStatus, setPermissionStatus] = useState('prompt');
   const [routePath, setRoutePath] = useState(null);
+  const [processionRoutePoints, setProcessionRoutePoints] = useState(PROCESSION_ROUTE_POINTS);
   const [routeSummary, setRouteSummary] = useState(null);
   const [routingStage, setRoutingStage] = useState('idle');
   const [routingError, setRoutingError] = useState(null);
@@ -95,6 +152,15 @@ export default function EventsMap() {
 
   useEffect(() => {
     calculateDistances(EVENTS_DATA, null); // Initial load without user location
+    
+    // Fetch road-following procession route
+    getProcessionRoute().then(roadPoints => {
+      if (roadPoints && roadPoints.length > 0) {
+        setProcessionRoutePoints(roadPoints);
+      }
+    }).catch(error => {
+      console.error('Failed to load procession route:', error);
+    });
   }, []);
 
   useEffect(() => {
@@ -697,7 +763,7 @@ export default function EventsMap() {
                 {showClosures ? t('hideClosures') : t('showClosures')}
               </Button>
             </div>
-            {PROCESSION_ROUTE_POINTS.length > 0 && (
+            {processionRoutePoints.length > 0 && (
               <div className="absolute top-4 right-4 z-[1100] flex flex-col items-end gap-2">
                 <Button
                   variant="outline"
@@ -719,7 +785,7 @@ export default function EventsMap() {
                 </Button>
               </div>
             )}
-            {PROCESSION_ROUTE_POINTS.length > 0 && (
+            {processionRoutePoints.length > 0 && (
               <div
                 className={`absolute right-4 top-20 w-72 bg-white/95 border border-orange-200 rounded-xl shadow-lg p-4 space-y-3 transition-all duration-200 ${
                   processionCardPinned
@@ -737,8 +803,8 @@ export default function EventsMap() {
                     size="xs"
                     className="text-[#B45309] border-[#F97316]/70 hover:bg-[#F97316]/15"
                     onClick={() => {
-                      if (mapRef.current && PROCESSION_ROUTE_POINTS.length) {
-                        const bounds = L.latLngBounds(PROCESSION_ROUTE_POINTS);
+                      if (mapRef.current && processionRoutePoints.length) {
+                        const bounds = L.latLngBounds(processionRoutePoints);
                         mapRef.current.fitBounds(bounds, { padding: [24, 24], maxZoom: 15 });
                       }
                     }}
@@ -750,7 +816,7 @@ export default function EventsMap() {
                   <p className="text-[11px] uppercase tracking-wide text-gray-500 font-semibold">
                     {t('processionStopsHeading')}
                   </p>
-                  <ol className="mt-2 space-y-2 text-xs text-gray-700 list-decimal list-inside">
+                  <ol className="mt-2 space-y-2 text-xs text-gray-700 list-decimal pl-5">
                     {PROCESSION_LANDMARKS.map((landmark) => (
                       <li key={landmark.id} className="leading-tight">
                         <p className="font-semibold text-gray-800">{landmark.name}</p>
@@ -814,10 +880,10 @@ export default function EventsMap() {
                 </Marker>
               ))}
 
-              {PROCESSION_ROUTE_POINTS.length > 0 && (
+              {processionRoutePoints.length > 0 && (
                 <>
                   <Polyline
-                    positions={PROCESSION_ROUTE_POINTS}
+                    positions={processionRoutePoints}
                     pathOptions={{
                       color: '#EA580C',
                       weight: 8,

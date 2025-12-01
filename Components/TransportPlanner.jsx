@@ -29,7 +29,12 @@ const STOP_COORDINATES = {
   'dasappa circle': { lat: 12.3099, lng: 76.6539 },
   'akashavani': { lat: 12.3107, lng: 76.6512 },
   'vonti koppal temple': { lat: 12.3134, lng: 76.6413 },
-  'chamundi hill': { lat: 12.2728, lng: 76.6717 }
+  'chamundi hill': { lat: 12.2728, lng: 76.6717 },
+  'vani vilas water works': { lat: 12.3094, lng: 76.6535 },
+  'dodda gadiyara': { lat: 12.3048, lng: 76.6556 },
+  'ramaswamy circle': { lat: 12.3049, lng: 76.6603 },
+  'ashoka circle': { lat: 12.3027, lng: 76.6606 },
+  'rto': { lat: 12.3034, lng: 76.6608 }
 };
 
 const EARTH_RADIUS_KM = 6371;
@@ -50,6 +55,28 @@ const distanceInKm = (lat1, lon1, lat2, lon2) => {
 const getNearestStopsForEvent = (event, stopsMap, limit = 3) => {
   if (!event || !stopsMap || !Object.keys(stopsMap).length) {
     return [];
+  }
+
+  const preferredStops = (event.nearbyStops || [])
+    .map((rawKey) => {
+      const normalizedKey = normalizeStopName(rawKey);
+      const stopData = stopsMap[normalizedKey];
+      if (!stopData) {
+        return null;
+      }
+      const coords = STOP_COORDINATES[normalizedKey];
+      const distanceKm = coords ? distanceInKm(event.lat, event.lng, coords.lat, coords.lng) : null;
+      return {
+        key: normalizedKey,
+        distanceKm,
+        name: stopData.name,
+        buses: stopData.buses
+      };
+    })
+    .filter(Boolean);
+
+  if (preferredStops.length) {
+    return preferredStops.slice(0, limit);
   }
 
   return Object.entries(STOP_COORDINATES)
@@ -81,44 +108,17 @@ export default function TransportPlanner() {
     return event.name;
   };
 
+  const getLocalizedVenue = (event) => {
+    if (!event) return '';
+    if (language === 'kn') return event.venue_kn || event.venue || '';
+    if (language === 'hi') return event.venue_hi || event.venue || '';
+    return event.venue || '';
+  };
+
   const fromEventDetails = route ? EVENTS_DATA.find((event) => event.id === route.fromEventId) : null;
   const toEventDetails = route ? EVENTS_DATA.find((event) => event.id === route.toEventId) : null;
   const fromStops = getNearestStopsForEvent(fromEventDetails, busStops);
   const toStops = getNearestStopsForEvent(toEventDetails, busStops);
-
-  const renderStopList = (stops) => {
-    if (busLoading) {
-      return (
-        <div className="flex items-center gap-2 text-xs text-gray-500">
-          <RefreshCw className="h-4 w-4 animate-spin" />
-          <span>Mapping city buses…</span>
-        </div>
-      );
-    }
-
-    if (busError) {
-      return <p className="text-xs text-red-600">{busError}</p>;
-    }
-
-    if (!stops?.length) {
-      return <p className="text-xs text-gray-500">No direct bus stops mapped yet.</p>;
-    }
-
-    return (
-      <ul className="space-y-2">
-        {stops.map((stop) => (
-          <li key={stop.key} className="rounded-lg bg-gray-50 p-2">
-            <p className="text-sm font-semibold text-gray-800">{stop.name}</p>
-            <p className="text-xs text-gray-500">{stop.distanceKm.toFixed(2)} km away</p>
-            <p className="text-xs text-gray-600 mt-1">
-              {stop.buses.slice(0, 4).join(', ')}
-              {stop.buses.length > 4 ? ` +${stop.buses.length - 4} more` : ''}
-            </p>
-          </li>
-        ))}
-      </ul>
-    );
-  };
 
   useEffect(() => {
     let isActive = true;
@@ -189,18 +189,27 @@ export default function TransportPlanner() {
     setTimeout(() => {
       const fromEvent = EVENTS_DATA.find(e => e.id.toString() === fromId);
       const toEvent = EVENTS_DATA.find(e => e.id.toString() === toId);
-      
-      // Mock distances roughly
-      const dist = Math.floor(Math.random() * 5) + 2; // 2-7 km random
+      if (!fromEvent || !toEvent) {
+        setLoading(false);
+        return;
+      }
+      const preciseDistance = distanceInKm(fromEvent.lat, fromEvent.lng, toEvent.lat, toEvent.lng);
+      const distance = Number.isFinite(preciseDistance) ? Math.max(0.5, parseFloat(preciseDistance.toFixed(1))) : 2;
+      const busDuration = Math.round(distance * 7 + 12);
+      const taxiDuration = Math.round(distance * 3 + 8);
+      const autoDuration = Math.round(distance * 4 + 10);
+      const busCost = Math.max(12, Math.round(distance * 5 + 10));
+      const taxiCost = Math.round(distance * 35 + 40);
+      const autoCost = Math.round(distance * 22 + 20);
       
       setRoute({
         fromEventId: fromEvent.id,
         toEventId: toEvent.id,
-        distance: dist,
+        distance,
         options: [
-          { type: 'bus', duration: dist * 5 + 10, cost: 15, icon: Bus },
-          { type: 'taxi', duration: dist * 2 + 5, cost: dist * 20, icon: Car },
-          { type: 'auto', duration: dist * 3 + 5, cost: dist * 15, icon: Truck },
+          { type: 'bus', duration: busDuration, cost: busCost, icon: Bus },
+          { type: 'taxi', duration: taxiDuration, cost: taxiCost, icon: Car },
+          { type: 'auto', duration: autoDuration, cost: autoCost, icon: Truck },
         ]
       });
       setLoading(false);
@@ -360,6 +369,11 @@ export default function TransportPlanner() {
                           <p className="text-xs font-semibold uppercase tracking-wide text-[#a25400]">
                             {getLocalizedEventName(segment.event) || (idx === 0 ? t('fromEvent') : t('toEvent'))}
                           </p>
+                          {segment.event?.venue && (
+                            <p className="text-[11px] text-gray-500 mt-0.5">
+                              {t('eventVenueLabel')}: {getLocalizedVenue(segment.event)}
+                            </p>
+                          )}
                           {segment.stops && segment.stops.length ? (
                             <ul className="mt-2 space-y-2">
                               {segment.stops.map((stop) => {
@@ -370,9 +384,11 @@ export default function TransportPlanner() {
                                   <li key={`${segment.event?.id || idx}-${stop.name}`} className="rounded-lg border border-yellow-100 bg-yellow-50/80 p-3">
                                     <div className="flex items-center justify-between text-sm font-semibold text-gray-900">
                                       <span>{stop.name}</span>
-                                      <span className="text-xs font-medium text-gray-500">
-                                        ≈ {stop.distanceKm.toFixed(1)} {t('kilometersUnit')}
-                                      </span>
+                                      {typeof stop.distanceKm === 'number' ? (
+                                        <span className="text-xs font-medium text-gray-500">
+                                          ≈ {stop.distanceKm.toFixed(1)} {t('kilometersUnit')}
+                                        </span>
+                                      ) : null}
                                     </div>
                                     <p className="mt-1 text-xs text-gray-600">
                                       {t('busListLabel')}: {busesToShow.join(', ')}
@@ -394,7 +410,7 @@ export default function TransportPlanner() {
                 <h3 className="font-semibold text-lg text-gray-800 mb-4 flex items-center gap-2">
                   {t('routeDetails')}
                   <span className="text-xs font-normal text-gray-500 ml-auto">
-                    Approx {route.distance} km
+                    ≈ {route.distance.toFixed(1)} {t('kilometersUnit')}
                   </span>
                 </h3>
                 
