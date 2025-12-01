@@ -501,24 +501,26 @@ export default function EventsMap() {
     <section id="events" className="py-12 md:py-20 bg-white">
       <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
       <div className="container mx-auto px-4">
-        <div className="text-center mb-10">
-          {!userLocation && permissionStatus !== 'denied' && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 inline-flex flex-col md:flex-row items-center gap-4 mx-auto">
+        {!userLocation && permissionStatus !== 'denied' && (
+          <div className="max-w-2xl mx-auto mb-6">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex flex-col gap-3 text-left shadow-sm md:flex-row md:items-center md:justify-between">
               <p className="text-sm text-yellow-800 flex items-center gap-2">
                 <Info className="w-4 h-4" />
                 {t('enableLocation')}
               </p>
-              <Button 
-                size="sm" 
+              <Button
+                size="sm"
                 onClick={handleGetLocation}
                 className="bg-[#DAA520] hover:bg-[#B8860B] text-white"
               >
                 Enable Location
               </Button>
             </div>
-          )}
+          </div>
+        )}
 
-          <div className="mt-6 max-w-2xl mx-auto">
+        <div className="text-center mb-10">
+          <div className="max-w-2xl mx-auto">
             <div className="flex items-center gap-3 bg-white shadow-md rounded-full px-4 py-2 border border-[#DAA520]/50">
               <Search className="w-5 h-5 text-[#800000]" />
               <input
