@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { Navigation, Calendar, Info, RefreshCw, Search } from 'lucide-react';
+import { Navigation, Calendar, Info, RefreshCw, Search, Map as MapIcon, Sparkles } from 'lucide-react';
 import { useLanguage, EVENTS_DATA, ROAD_CLOSURES } from './DasaraContext';
 import { Button, Card, CardContent, Badge } from './ui.jsx';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle } from 'react-leaflet';
@@ -89,6 +89,7 @@ export default function EventsMap() {
   const [routeInstructions, setRouteInstructions] = useState([]);
   const [routeClosures, setRouteClosures] = useState([]);
   const [showClosures, setShowClosures] = useState(true);
+  const [processionCardPinned, setProcessionCardPinned] = useState(true);
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
 
@@ -695,7 +696,35 @@ export default function EventsMap() {
               </Button>
             </div>
             {PROCESSION_ROUTE_POINTS.length > 0 && (
-              <div className="absolute top-4 right-4 z-[1000] w-72 bg-white/95 border border-orange-200 rounded-xl shadow-lg p-4 space-y-3">
+              <div className="absolute top-4 right-4 z-[1100] flex flex-col items-end gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={`flex items-center gap-2 border-[#F97316]/60 text-[#B45309] bg-white/90 ${processionCardPinned ? '' : 'shadow-lg'}`}
+                  onClick={() => setProcessionCardPinned((prev) => !prev)}
+                >
+                  {processionCardPinned ? (
+                    <>
+                      <MapIcon className="w-4 h-4" />
+                      {t('processionCardMapView')}
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      {t('processionCardShow')}
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+            {PROCESSION_ROUTE_POINTS.length > 0 && (
+              <div
+                className={`absolute right-4 top-20 w-72 bg-white/95 border border-orange-200 rounded-xl shadow-lg p-4 space-y-3 transition-all duration-200 ${
+                  processionCardPinned
+                    ? 'z-[1000] opacity-100 pointer-events-auto'
+                    : 'z-[10] opacity-60 pointer-events-none'
+                }`}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold text-[#B45309]">{t('processionRouteTitle')}</p>
