@@ -137,16 +137,4 @@ Contributions are what make the open-source community such an amazing place to l
 
 ##  Author
 
-**Samudyatha K Bhat**
-
----
-
-**Deeksha R**
-
----
-
-**Nicole Tabby**
-
----
-
-**Spoorthi S**
+**Samudyatha K Bhat** | **Deeksha R** | **Nicole Tabby** | **Spoorthi S**
