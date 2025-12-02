@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLanguage, EVENTS_DATA } from './DasaraContext';
 import { Card, CardContent, CardHeader, CardTitle, Button } from './ui.jsx';
-import { Bus, Car, Truck, Clock, IndianRupee, MapPin, RefreshCw } from 'lucide-react';
+import { Bus, MapPin, RefreshCw } from 'lucide-react';
 
 const sanitizeStopName = (value = '') =>
   value
@@ -100,7 +100,6 @@ export default function TransportPlanner() {
   const [busStops, setBusStops] = useState({});
   const [busLoading, setBusLoading] = useState(true);
   const [busError, setBusError] = useState(null);
-  const uberClientId = import.meta.env.VITE_UBER_CLIENT_ID;
 
   const getLocalizedEventName = (event) => {
     if (!event) return '';
@@ -233,21 +232,14 @@ export default function TransportPlanner() {
       const preciseDistance = distanceInKm(fromEvent.lat, fromEvent.lng, toEvent.lat, toEvent.lng);
       const distance = Number.isFinite(preciseDistance) ? Math.max(0.5, parseFloat(preciseDistance.toFixed(1))) : 2;
       const busDuration = Math.round(distance * 7 + 12);
-      const taxiDuration = Math.round(distance * 3 + 8);
-      const autoDuration = Math.round(distance * 4 + 10);
       const busCost = Math.max(12, Math.round(distance * 5 + 10));
-      const taxiCost = Math.round(distance * 35 + 40);
-      const autoCost = Math.round(distance * 22 + 20);
       
       setRoute({
         fromEventId: fromEvent.id,
         toEventId: toEvent.id,
         distance,
-        options: [
-          { type: 'bus', duration: busDuration, cost: busCost, icon: Bus },
-          { type: 'taxi', duration: taxiDuration, cost: taxiCost, icon: Car },
-          { type: 'auto', duration: autoDuration, cost: autoCost, icon: Truck },
-        ]
+        // Bus is the only supported mode right now, but we no longer render per-mode cards.
+        options: []
       });
       setLoading(false);
     }, 1500);
@@ -294,26 +286,78 @@ export default function TransportPlanner() {
   const uberUrl = useMemo(() => {
     if (!pickup || !drop) return null;
     try {
-      const url = new URL('https://m.uber.com/ul/');
-      url.searchParams.set('action', 'setPickup');
-      if (uberClientId) {
-        url.searchParams.set('client_id', uberClientId);
-      }
-      url.searchParams.set('pickup[latitude]', pickup.latitude);
-      url.searchParams.set('pickup[longitude]', pickup.longitude);
-      url.searchParams.set('pickup[nickname]', pickup.name);
-      url.searchParams.set('dropoff[latitude]', drop.latitude);
-      url.searchParams.set('dropoff[longitude]', drop.longitude);
-      url.searchParams.set('dropoff[nickname]', drop.name);
+      // Use official Uber deep link format from developer.uber.com
+      const url = new URL('https://m.uber.com/looking');
+      
+      // Create pickup location object
+      const pickupObj = {
+        latitude: pickup.latitude,
+        longitude: pickup.longitude,
+        addressLine1: pickup.name
+      };
+      
+      // Create dropoff location object
+      const dropoffObj = {
+        latitude: drop.latitude,
+        longitude: drop.longitude,
+        addressLine1: drop.name
+      };
+      
+      // Encode as JSON and set parameters
+      url.searchParams.set('pickup', JSON.stringify(pickupObj));
+      url.searchParams.set('drop[0]', JSON.stringify(dropoffObj));
+      
       return url.toString();
     } catch (error) {
       return null;
     }
-  }, [pickup, drop, uberClientId]);
+  }, [pickup, drop]);
+
+  const uberAppUrl = useMemo(() => {
+    if (!pickup || !drop) return null;
+    try {
+      // Use official uber:// scheme format
+      const params = new URLSearchParams();
+      params.set('pickup[latitude]', pickup.latitude);
+      params.set('pickup[longitude]', pickup.longitude);
+      params.set('pickup[nickname]', pickup.name);
+      params.set('dropoff[latitude]', drop.latitude);
+      params.set('dropoff[longitude]', drop.longitude);
+      params.set('dropoff[nickname]', drop.name);
+      return `uber://riderequest?${params.toString()}`;
+    } catch (error) {
+      return null;
+    }
+  }, [pickup, drop]);
 
   const handleRideRedirect = (url) => {
     if (!url) return;
     window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleUberRedirect = (webUrl, appUrl) => {
+    if (!webUrl) return;
+    try {
+      const isMobile = typeof navigator !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isMobile && appUrl) {
+        // Try opening the native app first. If that fails (app not installed),
+        // fallback to the web URL after a short delay.
+        const fallbackTimer = setTimeout(() => {
+          window.open(webUrl, '_blank', 'noopener,noreferrer');
+        }, 900);
+
+        // Attempt to open the native app. This may navigate away if the app is installed.
+        window.location.href = appUrl;
+
+        // Note: we can't reliably detect success in browsers, so the timeout provides
+        // a reasonable fallback to the web flow.
+        return;
+      }
+    } catch (err) {
+      // ignore and fallback to web link
+    }
+
+    window.open(webUrl, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -386,7 +430,7 @@ export default function TransportPlanner() {
                   <Button
                     variant="outline"
                     className="flex-1 border-black text-black"
-                    onClick={() => handleRideRedirect(uberUrl)}
+                    onClick={() => handleUberRedirect(uberUrl, uberAppUrl)}
                     disabled={!uberUrl}
                   >
                     Book Uber
@@ -546,37 +590,12 @@ export default function TransportPlanner() {
                   </div>
                 )}
                 
-                {route.options.map((opt, idx) => (
-                  <Card key={idx} className="hover:shadow-md transition-all cursor-pointer active:scale-[0.99]">
-                    <CardContent className="p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className={`p-3 rounded-full ${
-                          opt.type === 'bus' ? 'bg-blue-100 text-blue-600' : 
-                          opt.type === 'taxi' ? 'bg-yellow-100 text-yellow-600' : 
-                          'bg-green-100 text-green-600'
-                        }`}>
-                          <opt.icon className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <p className="font-bold capitalize text-gray-800">{opt.type}</p>
-                          <p className="text-xs text-gray-500">Frequent service</p>
-                        </div>
-                      </div>
-                      
-                      <div className="text-right">
-                        <div className="flex items-center justify-end gap-1 font-bold text-[#800000]">
-                          <IndianRupee className="w-3 h-3" />
-                          {opt.cost}
-                        </div>
-                        <div className="flex items-center justify-end gap-1 text-sm text-gray-600">
-                          <Clock className="w-3 h-3" />
-                          {opt.duration} min
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-                
+                {route.options.length === 0 && (
+                  <div className="rounded-xl border border-gray-200 bg-white/80 p-4 text-center text-sm text-gray-500">
+                    {t('busSupportSubtitle')}
+                  </div>
+                )}
+
               </div>
             )}
           </div>

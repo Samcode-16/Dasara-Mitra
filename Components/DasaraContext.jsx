@@ -417,14 +417,14 @@ export const ROAD_CLOSURES = [
     radius: 220
   },
   {
-    id: 'closure-bannimantap',
-    name: 'Bannimantap Grounds Diversion',
-    name_kn: 'ಬನ್ನಿಮಂಟಪ ದಾರಿದೀಪ ಬದಲಾವಣೆ',
-    lat: 12.3185,
-    lng: 76.6572,
-    description: 'Night traffic diverted for torchlight rehearsal 6 PM - 10 PM.',
-    description_kn: 'ಟಾರ್ಚ್‌ಲೈಟ್ ಅಭ್ಯಾಸಕ್ಕಾಗಿ ರಾತ್ರಿ ೬ ರಿಂದ ೧೦ರವರೆಗೆ ವಾಹನ ಸಂಚಾರ ಮತ್ತೊಂದು ಮಾರ್ಗಕ್ಕೆ ಪರಿವರ್ತನೆ.',
-    days: [8, 9, 10],
+    id: 'closure-torchlight-main-gate',
+    name: 'Torchlight Parade Grounds Main Gate Diversion',
+    name_kn: 'ಟಾರ್ಚ್‌ಲೈಟ್ ಪೆರೇಡ್ ಮುಖ್ಯ ಗೇಟ್ ಮಾರ್ಗ ಬದಲಾವಣೆ',
+    lat: 12.3420,
+    lng: 76.6530,
+    description: 'Road diversion near Torchlight Parade Grounds main gate for finale setup from 2 PM - 11 PM.',
+    description_kn: 'ಟಾರ್ಚ್‌ಲೈಟ್ ಪೆರೇಡ್ ಮುಖ್ಯ ಗೇಟ್ ಬಳಿ ಅಂತಿಮ ಸಿದ್ಧತೆಗಾಗಿ ಮಧ್ಯಾಹ್ನ ೨ ರಿಂದ ರಾತ್ರಿ ೧೧ರವರೆಗೆ ಮಾರ್ಗ ಬದಲಾವಣೆ.',
+    days: [10],
     radius: 180
   },
   {
