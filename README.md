@@ -1,67 +1,121 @@
-## Dasara Mitra
+#  Dasara Mitra
 
-Dasara Mitra is a bilingual festival companion for Mysuru Dasara 2025. The app helps residents and visitors explore key events, plan travel between venues, browse a curated gallery, and chat with a friendly assistant for quick answers. Core features include:
+<img src="https://res.cloudinary.com/ddg0ystfb/image/upload/v1764665971/logo_txk1rx.png" alt="Dasara Mitra Logo" width="120" height="auto">
+<div align="center">
 
-- **Interactive Map** – Pinpoints major Dasara events, highlights distances from your location, and offers quick navigation cues.
-- **Transport Planner** – Suggests mock bus, taxi, and auto options between venues with estimated time and fare details.
-- **Immersive Gallery** – Showcases festival visuals with a lightbox experience; simply place your own images under `public/images/gallery`.
-- **Chatbot Assistant** – Responds in English or Kannada, sharing context-aware tips about events, travel, and festival history.
-- **Language Toggle** – Switch between English and Kannada via the header control, powered by a context-based translation system.
+![React](https://img.shields.io/badge/React-19-blue?logo=react)
+![Vite](https://img.shields.io/badge/Vite-Fast-yellow?logo=vite)
+![Tailwind](https://img.shields.io/badge/Tailwind-CSS-teal?logo=tailwindcss)
+![Gemini](https://img.shields.io/badge/AI-Gemini%20Flash-orange?logo=google)
 
-### Tech Stack
+**The Ultimate Bilingual Companion for Mysuru Dasara 2025**
 
-- **React 19 + Vite** for the SPA shell and dev tooling
-- **Tailwind CSS** for utility-first styling
-- **Leaflet + React Leaflet** for the interactive map
-- **Lucide Icons** for crisp, lightweight iconography
+[View Live Demo](#) · [Report Bug](#) · [Request Feature](#)
 
-### Local Development
+</div>
 
-```bash
-npm install
-npm run dev
-```
+---
 
-Vite runs on `http://localhost:5173/` by default. Hot Module Replacement (HMR) is enabled for fast iteration.
+##  About The Project
 
-### Production Build
+**Dasara Mitra** is a modern, responsive web application designed to help residents and visitors navigate the grandeur of the Mysuru Dasara festival. Whether you are looking for the next big event, trying to find the best route through traffic, or simply want to learn about the history of the palace, Dasara Mitra is your pocket assistant.
 
-```bash
-npm run build
-```
+It bridges the gap between tradition and technology by offering a fully bilingual interface (English & Kannada) and an AI-powered assistant.
 
-Outputs are written to the `dist/` directory. Serve them via any static host.
+##  Key Features
 
-### Customizing Content
+* **🗺️ Interactive Event Map:** Pinpoint major venues, calculate distances from your live location, and get instant navigation cues using Leaflet.
+* **🚕 Smart Transport Planner:** Compare travel options (Bus, Taxi, Auto) between venues with estimated fares and travel times.
+* **🖼️ Immersive Gallery:** A dynamic, lightbox-enabled photo gallery powered by Cloudinary.
+* **🤖 AI Chatbot Assistant:** A context-aware assistant (powered by Google Gemini) that answers queries about history, schedules, and travel tips in English or Kannada.
+* **🗣️ Bilingual Support:** Seamless language toggling with context-based translations for a localized experience.
 
-- **Translations** – Update strings in `Components/DasaraContext.jsx`.
-- **Event Data** – Edit the `EVENTS_DATA` array in `Components/DasaraContext.jsx`.
-- **Gallery Images** – Configure Cloudinary by copying `.env.example` to `.env`, then set `VITE_CLOUDINARY_CLOUD_NAME` and `VITE_CLOUDINARY_GALLERY_TAG`. Upload photos to Cloudinary with the chosen tag (or keep the defaults to fall back on local SVG placeholders).
-- **Branding** – Swap `public/images/branding/logo.png` and tweak header colors/styles inside `Components/Header.jsx`.
+##  Tech Stack
 
-### Contact Form Email Relay
+* **Core:** React 19, Vite
+* **Styling:** Tailwind CSS, Lucide Icons
+* **Maps:** Leaflet, React Leaflet
+* **Integrations:**
+    * **AI:** Google Gemini API (Flash model)
+    * **Media:** Cloudinary (Image optimization & hosting)
+    * **Email:** EmailJS (Contact form relay)
 
-The footer "Contact us" form sends messages through EmailJS. Provide the following environment variables in `.env` (restart `npm run dev` afterward):
+##  Getting Started
 
-```
-VITE_EMAILJS_SERVICE_ID=<your_emailjs_service_id>
-VITE_EMAILJS_TEMPLATE_ID=<your_emailjs_template_id>
-VITE_EMAILJS_PUBLIC_KEY=<your_emailjs_public_key>
-```
+### Prerequisites
+* Node.js (v18 or higher)
+* npm
 
-You can generate these values from the [EmailJS dashboard](https://dashboard.emailjs.com/). Update the selected template to expect `from_name`, `reply_to`, and `message` fields, which the app sends by default.
+### Installation
 
-### Folder Highlights
+1.  **Clone the repository**
+    ```bash
+    git clone [https://github.com/yourusername/dasara-mitra.git](https://github.com/yourusername/dasara-mitra.git)
+    cd dasara-mitra
+    ```
 
-- `Components/` – UI building blocks including Header, EventsMap, TransportPlanner, Gallery, Layout, and Chatbot.
-- `Pages/Home.jsx` – Home view composing the main sections.
-  
-### Chatbot Setup
+2.  **Install dependencies**
+    ```bash
+    npm install
+    ```
 
-- Create a `.env` file (copy from `.env.example`) and provide `VITE_GEMINI_API_KEY` with your Google AI Studio (Gemini) key.
-- The in-app assistant calls Gemini Flash directly from the browser, so keep your key scoped and rotate it if ever exposed.
+3.  **Configure Environment Variables**
+    Create a `.env` file in the root directory and add the following keys:
 
-### Notes
+    | Variable                      | Description                                           |
+    | :---------------------------- | :---------------------------------------------------- |
+    | `VITE_GEMINI_API_KEY`         | Your Google AI Studio API Key for the chatbot.        |
+    | `VITE_CLOUDINARY_CLOUD_NAME`  | Your Cloudinary Cloud Name.                           |
+    | `VITE_CLOUDINARY_GALLERY_TAG` | The tag used to fetch images (e.g., `mysore_dasara`). |
+    | `VITE_EMAILJS_SERVICE_ID`     | EmailJS Service ID.                                   |
+    | `VITE_EMAILJS_TEMPLATE_ID`    | EmailJS Template ID.                                  |
+    | `VITE_EMAILJS_PUBLIC_KEY`     | EmailJS Public Key.                                   |
 
-- Geolocation, chatbot responses, and transport results are mock implementations suited for demos.
+4.  **Run the development server**
+    ```bash
+    npm run dev
+    ```
 
+##  Project Structure
+
+```text
+src/
+├── components/          # UI Building Blocks
+│   ├── Chatbot/         # AI Assistant logic
+│   ├── EventsMap/       # Leaflet map configuration
+│   ├── Gallery/         # Cloudinary integration
+│   ├── Transport/       # Route planning logic
+│   └── Header.jsx       # Navigation & Language toggle
+├── context/
+│   └── DasaraContext.jsx # Global state (Lang, Events Data)
+├── pages/
+│   └── Home.jsx         # Main landing page
+└── App.jsx              # App entry point
+
+🔌 Integrations Guide
+Cloudinary Gallery
+To populate the gallery, upload images to your Cloudinary dashboard and tag them with the value set in VITE_CLOUDINARY_GALLERY_TAG. The app automatically fetches and displays them.
+
+EmailJS Contact Form
+The contact form is wired to send emails directly to you. Ensure your EmailJS template expects these variables:
+
+from_name (Sender's Name)
+
+email (Sender's Email - Reply-To)
+
+message (The body text)
+
+⚠️ Note on Mock Data
+Transport & Geolocation: Transport fares and specific geolocation cues are mock implementations designed for demonstration purposes.
+
+AI Security: The Gemini API key is exposed client-side. For a production deployment, it is recommended to proxy these requests through a backend server.
+
+🤝 Contributing
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## ✍️ Author
+
+**Samudyatha K Bhat** 
+**Deeksha R** 
+**Nicole Tabby**
+**Spoorthi S**
