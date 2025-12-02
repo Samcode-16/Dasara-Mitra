@@ -82,18 +82,21 @@ It bridges the gap between tradition and technology by offering a fully bilingua
 ##  Project Structure
 
 ```text
-src/
-├── components/          # UI Building Blocks
-│   ├── Chatbot/         # AI Assistant logic
-│   ├── EventsMap/       # Leaflet map configuration
-│   ├── Gallery/         # Cloudinary integration
-│   ├── Transport/       # Route planning logic
-│   └── Header.jsx       # Navigation & Language toggle
-├── context/
-│   └── DasaraContext.jsx # Global state (Lang, Events Data)
-├── pages/
-│   └── Home.jsx         # Main landing page
-└── App.jsx              # App entry point
+Dasara-Mitra/
+├── Components/              # Reusable UI + feature blocks (Chatbot, Gallery, VoiceAssistant, etc.)
+├── Pages/                   # Route-level views (Home, Events, Gallery, Transport)
+├── public/                  # Static assets (logos, fallback gallery, bus route JSON)
+├── src/
+│   ├── main.jsx             # React entry point
+│   └── index.css            # Global Tailwind styles
+├── server/                  # Secure Gemini proxy (Express)
+│   ├── index.js             # Proxy + Email relay endpoints
+│   └── package.json         # Backend dependencies & scripts
+├── package.json             # Frontend deps & scripts
+├── tailwind.config.js
+├── postcss.config.js
+├── vite.config.js
+└── README.md
 ```
 
 ##  Integrations Guide
