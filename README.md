@@ -58,13 +58,13 @@ It bridges the gap between tradition and technology by offering a fully bilingua
 
 2.  **Install dependencies**
     ```bash
+    
+        > Deploying on Vercel? The repository also ships with `api/assistant.js`, a serverless version of the Gemini proxy. Just set the same environment variables in the Vercel dashboard and the chatbot will call `/api/assistant` automatically.
+
     npm install
     ```
 
 3.  **Configure Environment Variables**
-    Create a `.env` file in the root directory and add the following keys:
-
-    | Variable                      | Description                                           |
     | :---------------------------- | :---------------------------------------------------- |
     | `VITE_GEMINI_API_KEY`         | Your Google AI Studio API Key for the chatbot.        |
     | `VITE_CLOUDINARY_CLOUD_NAME`  | Your Cloudinary Cloud Name.                           |
