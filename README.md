@@ -74,9 +74,10 @@ It bridges the gap between tradition and technology by offering a fully bilingua
     | `VITE_EMAILJS_PUBLIC_KEY`     | EmailJS Public Key.                                   |
     | `VITE_ASSISTANT_API_BASE_URL` | URL of the backend proxy (default `http://localhost:4000`). |
 
-4.  **Run the development server**
+4.  **Run the development servers**
     ```bash
-    npm run dev
+    npm run server     # Backend proxy (Express in /server)
+    npm run dev        # Frontend (Vite)
     ```
 
 ##  Project Structure
