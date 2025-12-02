@@ -26,11 +26,11 @@ It bridges the gap between tradition and technology by offering a fully bilingua
 
 ##  Key Features
 
-* **🗺️ Interactive Event Map:** Pinpoint major venues, calculate distances from your live location, and get instant navigation cues using Leaflet.
-* **🚕 Smart Transport Planner:** Compare travel options (Bus, Taxi, Auto) between venues with estimated fares and travel times.
-* **🖼️ Immersive Gallery:** A dynamic, lightbox-enabled photo gallery powered by Cloudinary.
-* **🤖 AI Chatbot Assistant:** A context-aware assistant (powered by Google Gemini) that answers queries about history, schedules, and travel tips in English or Kannada.
-* **🗣️ Bilingual Support:** Seamless language toggling with context-based translations for a localized experience.
+* **Interactive Event Map:** Pinpoint major venues, calculate distances from your live location, and get instant navigation cues using Leaflet.
+* **Smart Transport Planner:** Compare travel options (Bus, Taxi, Auto) between venues with estimated fares and travel times.
+* **Immersive Gallery:** A dynamic, lightbox-enabled photo gallery powered by Cloudinary.
+* **AI Chatbot Assistant:** A context-aware assistant (powered by Google Gemini) that answers queries about history, schedules, and travel tips in English or Kannada.
+* **Bilingual Support:** Seamless language toggling with context-based translations for a localized experience.
 
 ##  Tech Stack
 
@@ -135,6 +135,6 @@ Contributions are what make the open-source community such an amazing place to l
 5.  Open a Pull Request
 
 
-##  Author
+##  Authors
 
 **Samudyatha K Bhat** | **Deeksha R** | **Nicole Tabby** | **Spoorthi S**
