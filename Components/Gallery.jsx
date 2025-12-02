@@ -64,8 +64,64 @@ const CLOUDINARY_SECTIONS = [
   { tag: 'mysuru_exhibition', titleKey: 'gallerySectionExhibitionTitle', blurbKey: 'gallerySectionExhibitionBlurb' },
   { tag: 'mysuru_dasara_tableau', titleKey: 'gallerySectionTableauTitle', blurbKey: 'gallerySectionTableauBlurb' },
   { tag: 'mysuru_wrestling_tournament', titleKey: 'gallerySectionWrestlingTitle', blurbKey: 'gallerySectionWrestlingBlurb' },
-  { tag: 'mysuru_drone_show', titleKey: 'gallerySectionDroneTitle', blurbKey: 'gallerySectionDroneBlurb' }
+  { tag: 'mysuru_drone_show', titleKey: 'gallerySectionDroneTitle', blurbKey: 'gallerySectionDroneBlurb' },
+  { tag: 'mysuru_vintage_car_rally', titleKey: 'gallerySectionVintageTitle', blurbKey: 'gallerySectionVintageBlurb' }
 ];
+
+const GALLERY_CACHE_KEY = 'dasara-gallery-cache-v1';
+const GALLERY_CACHE_TTL = 1000 * 60 * 30; // 30 minutes
+
+const getStorage = () => (typeof window !== 'undefined' ? window.sessionStorage : null);
+
+const readGalleryCache = (cloudName, tags) => {
+  const storage = getStorage();
+  if (!storage) {
+    return null;
+  }
+  try {
+    const raw = storage.getItem(GALLERY_CACHE_KEY);
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw);
+    if (!parsed || parsed.cloudName !== cloudName) {
+      return null;
+    }
+    if (!Array.isArray(parsed.tags) || parsed.tags.length !== tags.length) {
+      return null;
+    }
+    const isSameOrder = parsed.tags.every((tag, index) => tag === tags[index]);
+    if (!isSameOrder) {
+      return null;
+    }
+    if (!parsed.timestamp || Date.now() - parsed.timestamp > GALLERY_CACHE_TTL) {
+      storage.removeItem(GALLERY_CACHE_KEY);
+      return null;
+    }
+    return Array.isArray(parsed.sections) ? parsed.sections : null;
+  } catch (error) {
+    storage.removeItem(GALLERY_CACHE_KEY);
+    return null;
+  }
+};
+
+const writeGalleryCache = (cloudName, tags, sections) => {
+  const storage = getStorage();
+  if (!storage) {
+    return;
+  }
+  const payload = {
+    cloudName,
+    tags,
+    timestamp: Date.now(),
+    sections
+  };
+  try {
+    storage.setItem(GALLERY_CACHE_KEY, JSON.stringify(payload));
+  } catch (error) {
+    storage.removeItem(GALLERY_CACHE_KEY);
+  }
+};
 
 const getLocalizedFallback = (language) =>
   FALLBACK_BLUEPRINT.map((item) => {
@@ -116,9 +172,18 @@ export default function Gallery() {
     return CLOUDINARY_SECTIONS.filter((section) => configuredTags.includes(section.tag));
   }, [galleryTagsRaw]);
 
+  const activeTags = useMemo(() => activeSections.map((section) => section.tag), [activeSections]);
+
   useEffect(() => {
     if (!cloudName || !activeSections.length) {
       setSectionImages([buildFallbackSection()]);
+      return;
+    }
+
+    const cachedSections = readGalleryCache(cloudName, activeTags);
+    if (cachedSections) {
+      setSectionImages(cachedSections);
+      setError(null);
       return;
     }
 
@@ -180,6 +245,7 @@ export default function Gallery() {
         setError(encounteredError ? t('galleryCloudinaryError') : t('galleryCloudinaryEmpty'));
       } else {
         setSectionImages(results);
+        writeGalleryCache(cloudName, activeTags, results);
         setError(encounteredError ? t('galleryCloudinaryError') : null);
       }
       setLoading(false);
@@ -188,7 +254,7 @@ export default function Gallery() {
     fetchCloudinaryImages();
 
     return () => controller.abort();
-  }, [cloudName, activeSections, buildFallbackSection, t]);
+  }, [cloudName, activeSections, activeTags, buildFallbackSection, t]);
 
   useEffect(() => {
     setSectionImages((current) => {
