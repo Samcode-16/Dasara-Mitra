@@ -52,15 +52,6 @@ const finaleIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
-const routeCheckpointIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
-
 // Function to get road-following route between waypoints
 const getProcessionRoute = async () => {
   const palaceStart = {lat: 12.304109, lng: 76.655382};
@@ -900,23 +891,15 @@ export default function EventsMap() {
                       lineCap: 'round'
                     }}
                   />
-                  {PROCESSION_LANDMARKS.map((landmark) => {
-                    const icon = landmark.type === 'start'
-                      ? palaceIcon
-                      : landmark.type === 'end'
-                        ? finaleIcon
-                        : routeCheckpointIcon;
+                  {PROCESSION_LANDMARKS.filter((landmark) => landmark.type === 'start' || landmark.type === 'end').map((landmark) => {
+                    const icon = landmark.type === 'start' ? palaceIcon : finaleIcon;
                     return (
                       <Marker key={landmark.id} position={[landmark.lat, landmark.lng]} icon={icon}>
                         <Popup>
                           <div className="text-sm text-center space-y-1">
                             <p className="font-semibold text-[#B45309]">{landmark.name}</p>
                             <p className="text-[11px] text-gray-600">
-                              {landmark.type === 'start'
-                                ? t('processionStartingPoint')
-                                : landmark.type === 'end'
-                                  ? t('processionEndingPoint')
-                                  : t('jambooRouteLabel')}
+                              {landmark.type === 'start' ? t('processionStartingPoint') : t('processionEndingPoint')}
                             </p>
                           </div>
                         </Popup>
