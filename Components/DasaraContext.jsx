@@ -474,10 +474,35 @@ export const ROAD_CLOSURES = [
   }
 ];
 
+const CURRENT_YEAR = new Date().getFullYear();
+const DIGIT_MAPS = {
+  kn: { '0': '೦', '1': '೧', '2': '೨', '3': '೩', '4': '೪', '5': '೫', '6': '೬', '7': '೭', '8': '೮', '9': '೯' },
+  hi: { '0': '०', '1': '१', '2': '२', '3': '३', '4': '४', '5': '५', '6': '६', '7': '७', '8': '८', '9': '९' }
+};
+
+const toLocalizedDigits = (value, locale) => {
+  const map = DIGIT_MAPS[locale];
+  if (!map) {
+    return String(value);
+  }
+  return String(value)
+    .split('')
+    .map((char) => map[char] || char)
+    .join('');
+};
+
+const EN_FESTIVAL_DATES = `Navaratri • 1 – 10 Oct ${CURRENT_YEAR}`;
+const KN_FESTIVAL_DATES = `ನವ ರಾತ್ರಿ • ಅಕ್ಟೋಬರ್ ${toLocalizedDigits(1, 'kn')} – ${toLocalizedDigits(10, 'kn')}, ${toLocalizedDigits(CURRENT_YEAR, 'kn')}`;
+const HI_FESTIVAL_DATES = `नवरात्रि • ${toLocalizedDigits(1, 'hi')} – ${toLocalizedDigits(10, 'hi')} अक्तूबर ${toLocalizedDigits(CURRENT_YEAR, 'hi')}`;
+
+const EN_FOOTER_COPY = `© ${CURRENT_YEAR} Dasara Mitra. Celebrating the spirit of Mysore.`;
+const KN_FOOTER_COPY = `© ${toLocalizedDigits(CURRENT_YEAR, 'kn')} ದಸರಾ ಮಿತ್ರ. ಮೈಸೂರಿನ ಸಂಭ್ರಮವನ್ನು ಆಚರಿಸೋಣ.`;
+const HI_FOOTER_COPY = `© ${toLocalizedDigits(CURRENT_YEAR, 'hi')} दसरा मित्र। मैसूर की परंपरा का उत्सव।`;
+
 export const TRANSLATIONS = {
   en: {
     title: "Dasara Mitra",
-    heroTitle: "Welcome to Mysore Dasara 2025",
+    heroTitle: "Welcome to Mysore Dasara",
     heroSubtitle: "Your Festival Companion – Navigate events, transport, and memories effortlessly.",
     ctaEvents: "Find Nearest Events",
     ctaGallery: "Explore Gallery",
@@ -528,7 +553,7 @@ export const TRANSLATIONS = {
     toEvent: "To Event",
     calculating: "Calculating...",
     routeDetails: "Route Details",
-    footerText: "© 2025 Dasara Mitra. Celebrating the spirit of Mysore.",
+    footerText: EN_FOOTER_COPY,
     footerAboutTitle: "About Dasara Mitra",
     footerAboutDescription: "Your bilingual festival navigator for routes, events, and on-ground essentials during Mysuru Dasara.",
     footerDiscoverTitle: "Discover Dasara",
@@ -545,7 +570,7 @@ export const TRANSLATIONS = {
     footerConnectTitle: "Stay in touch",
     footerAddress: "Mysuru, Karnataka, India",
     footerDisclaimer: "Community-built companion. Information verified with Mysuru Dasara authorities.",
-    footerFestivalDates: "Navaratri • 1 – 10 Oct 2025",
+    footerFestivalDates: EN_FESTIVAL_DATES,
     footerPlanTip: "Arrive by 4 PM to secure vantage points for the grand Jamboo Savari procession.",
     footerDailyFlowTitle: "Daily Festival Flow",
     footerDailyFlowDescription: "Stay ahead of the day-wise highlights and never miss a spectacle.",
@@ -656,7 +681,7 @@ export const TRANSLATIONS = {
   },
   kn: {
     title: "ದಸರಾ ಮಿತ್ರ",
-    heroTitle: "ಮೈಸೂರು ದಸರಾ ೨೦೨೫ಗೆ ಸ್ವಾಗತ",
+    heroTitle: "ಮೈಸೂರು ದಸರಾಗೆ ಸ್ವಾಗತ",
     heroSubtitle: "ನಿಮ್ಮ ಹಬ್ಬದ ಸಂಗಾತಿ - ಕಾರ್ಯಕ್ರಮಗಳು, ಸಾರಿಗೆ ಮತ್ತು ನೆನಪುಗಳನ್ನು ಸುಲಭವಾಗಿ ಅನ್ವೇಷಿಸಿ.",
     ctaEvents: "ಹತ್ತಿರದ ಕಾರ್ಯಕ್ರಮಗಳು",
     ctaGallery: "ಗ್ಯಾಲರಿ ವೀಕ್ಷಿಸಿ",
@@ -707,7 +732,7 @@ export const TRANSLATIONS = {
     toEvent: "ಇಲ್ಲಿಗೆ",
     calculating: "ಲೆಕ್ಕಹಾಕಲಾಗುತ್ತಿದೆ...",
     routeDetails: "ಮಾರ್ಗದ ವಿವರಗಳು",
-    footerText: "© ೨೦೨೫ ದಸರಾ ಮಿತ್ರ. ಮೈಸೂರಿನ ಸಂಭ್ರಮವನ್ನು ಆಚರಿಸೋಣ.",
+    footerText: KN_FOOTER_COPY,
     footerAboutTitle: "ದಸರಾ ಮಿತ್ರ ಬಗ್ಗೆ",
     footerAboutDescription: "ಮೈಸೂರು ದಸರಾದ ಸಮಯದಲ್ಲಿ ಮಾರ್ಗಗಳು, ಕಾರ್ಯಕ್ರಮಗಳು ಮತ್ತು ಅಗತ್ಯ ಮಾಹಿತಿಗಾಗಿ ನಿಮ್ಮ ದ್ವಿಭಾಷಾ ಮಾರ್ಗದರ್ಶಿ.",
     footerDiscoverTitle: "ದಸರಾ ಅನ್ವೇಷಿಸಿ",
@@ -724,7 +749,7 @@ export const TRANSLATIONS = {
     footerConnectTitle: "ಸಂಪರ್ಕಿಸಿ",
     footerAddress: "ಮೈಸೂರು, ಕರ್ನಾಟಕ, ಭಾರತ",
     footerDisclaimer: "ಸಮುದಾಯ ನಿರ್ಮಿತ ಮಾರ್ಗದರ್ಶಿ. ಮೈಸೂರು ದಸರಾ ಆಡಳಿತದಿಂದ ಪರಿಶೀಲಿತ ಮಾಹಿತಿ.",
-    footerFestivalDates: "ನವ ರಾತ್ರಿ • ಅಕ್ಟೋಬರ್ ೧ – ೧೦, ೨೦೨೫",
+    footerFestivalDates: KN_FESTIVAL_DATES,
     footerPlanTip: "ಜಂಬೂ ಸವಾರಿ ಭವ್ಯ ಮೆರವಣಿಗೆ ವೀಕ್ಷಿಸಲು ಸಂಜೆ ೪ಕ್ಕೆ ಮುನ್ನ ಸ್ಥಳ ತಲುಪಿ.",
     footerDailyFlowTitle: "ದಿನವಾರ ಹಬ್ಬದ ಹೊಳೆ",
     footerDailyFlowDescription: "ಪ್ರತಿ ದಿನದ ಸಂಭವಗಳನ್ನು ತಿಳಿದು ವಿಶೇಷ ಕ್ಷಣಗಳನ್ನು ತಪ್ಪಿಸಿಕೊಳ್ಳಬೇಡಿ.",
@@ -835,7 +860,7 @@ export const TRANSLATIONS = {
   },
   hi: {
     title: "दसरा मित्र",
-    heroTitle: "मैसूरु दशहरा 2025 में आपका स्वागत है",
+    heroTitle: "मैसूरु दशहरा में आपका स्वागत है",
     heroSubtitle: "आपका उत्सव साथी – कार्यक्रम, यात्रा और यादों को सहज बनाएं।",
     ctaEvents: "पास के कार्यक्रम",
     ctaGallery: "गैलरी देखें",
@@ -886,7 +911,7 @@ export const TRANSLATIONS = {
     toEvent: "यहाँ तक",
     calculating: "गणना जारी...",
     routeDetails: "मार्ग विवरण",
-    footerText: "© 2025 दसरा मित्र। मैसूर की परंपरा का उत्सव।",
+    footerText: HI_FOOTER_COPY,
     footerAboutTitle: "दसरा मित्र के बारे में",
     footerAboutDescription: "मैसूर दशहरा के दौरान मार्गों, कार्यक्रमों और ज़रूरी जानकारी के लिए आपका द्विभाषी मार्गदर्शक।",
     footerDiscoverTitle: "दशहरा खोजें",
@@ -903,7 +928,7 @@ export const TRANSLATIONS = {
     footerConnectTitle: "संपर्क में रहें",
     footerAddress: "मैसूरु, कर्नाटक, भारत",
     footerDisclaimer: "समुदाय द्वारा बनाया गया साथी। जानकारी मैसूरु दशहरा प्राधिकरण से सत्यापित है।",
-    footerFestivalDates: "नवरात्रि • 1 – 10 अक्तूबर 2025",
+    footerFestivalDates: HI_FESTIVAL_DATES,
     footerPlanTip: "भव्य जम्बू सवारी में अच्छा दृश्य पाने के लिए शाम 4 बजे तक पहुँचें।",
     footerDailyFlowTitle: "दैनिक उत्सव क्रम",
     footerDailyFlowDescription: "हर दिन की मुख्य झलक जानें और कोई विशेष क्षण न चूकें।",

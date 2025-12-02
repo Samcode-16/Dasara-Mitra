@@ -11,16 +11,45 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
+const normalizeOrigin = (origin = '') => origin.replace(/\/$/, '');
+
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
-  : null;
+  : [];
 
-app.use(
-  cors({
-    origin: allowedOrigins && allowedOrigins.length ? allowedOrigins : true,
-    credentials: false
-  })
-);
+const originMatchers = allowedOrigins.map((origin) => {
+  if (origin.endsWith(':*')) {
+    return { type: 'wildcard', value: normalizeOrigin(origin.slice(0, -2)) };
+  }
+  return { type: 'exact', value: normalizeOrigin(origin) };
+});
+
+const corsOptions = {
+  origin: (requestOrigin, callback) => {
+    if (!originMatchers.length || !requestOrigin) {
+      return callback(null, true);
+    }
+
+    const normalizedRequest = normalizeOrigin(requestOrigin);
+    const isAllowed = originMatchers.some((matcher) => {
+      if (matcher.type === 'exact') {
+        return normalizedRequest === matcher.value;
+      }
+      if (matcher.type === 'wildcard') {
+        return (
+          normalizedRequest === matcher.value ||
+          normalizedRequest.startsWith(`${matcher.value}:`)
+        );
+      }
+      return false;
+    });
+
+    return isAllowed ? callback(null, true) : callback(new Error('Not allowed by CORS'));
+  },
+  credentials: false
+};
+
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));
 
 app.get('/api/health', (req, res) => {

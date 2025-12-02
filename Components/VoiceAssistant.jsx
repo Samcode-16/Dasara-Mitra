@@ -16,6 +16,11 @@ const LANGUAGE_KEYWORDS = {
   hi: ['hindi', 'hindhi', 'हिंदी']
 };
 
+const SCRIPT_MATCHERS = {
+  kn: /[\u0C80-\u0CFF]/, // Kannada
+  hi: /[\u0900-\u097F]/ // Devanagari (Hindi)
+};
+
 const LANGUAGE_ACKS = {
   en: 'Namaskara! I will answer in English now.',
   kn: 'ನಮಸ್ಕಾರ! ನಾನು ಈಗಿನಿಂದ ಕನ್ನಡದಲ್ಲಿ ಉತ್ತರಿಸುತ್ತೇನೆ.',
@@ -74,6 +79,16 @@ const detectLanguageCommand = (text = '') => {
   }, null);
 };
 
+const detectLanguageByScript = (text = '') => {
+  if (!text) {
+    return null;
+  }
+  return Object.entries(SCRIPT_MATCHERS).reduce((match, [code, regex]) => {
+    if (match) return match;
+    return regex.test(text) ? code : null;
+  }, null);
+};
+
 const stripLanguageKeywords = (text = '', languageCode) => {
   const keywords = LANGUAGE_KEYWORDS[languageCode] || [];
   return keywords
@@ -117,12 +132,16 @@ export default function VoiceAssistant() {
 
       let workingQuery = originalQuery;
       let responseLanguage = language;
-      const requestedLanguage = detectLanguageCommand(originalQuery);
+      const keywordLanguage = detectLanguageCommand(originalQuery);
+      const scriptLanguage = keywordLanguage ? null : detectLanguageByScript(originalQuery);
+      const requestedLanguage = keywordLanguage || scriptLanguage;
 
       if (requestedLanguage) {
         responseLanguage = requestedLanguage;
         changeLanguagePreference(requestedLanguage);
-        workingQuery = stripLanguageKeywords(workingQuery, requestedLanguage);
+        if (keywordLanguage) {
+          workingQuery = stripLanguageKeywords(workingQuery, requestedLanguage);
+        }
       }
 
       const cleanedQuery = workingQuery.trim();

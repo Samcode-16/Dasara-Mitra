@@ -296,8 +296,36 @@ export default function EventsMap() {
 
   const dayOptions = useMemo(() => Array.from({ length: 10 }, (_, index) => index + 1), []);
 
+  const getLocalizedEventText = (event, key) => {
+    if (!event) {
+      return '';
+    }
+    if (language === 'kn') {
+      return event[`${key}_kn`] || event[key] || '';
+    }
+    if (language === 'hi') {
+      return event[`${key}_hi`] || event[key] || '';
+    }
+    return event[key] || '';
+  };
+
+  const getLocalizedAgeGroup = (event) => {
+    if (!event) {
+      return '';
+    }
+    if (language === 'kn') {
+      return event.ageGroup_kn || event.ageGroup || '';
+    }
+    if (language === 'hi') {
+      return event.ageGroup_hi || event.ageGroup || '';
+    }
+    return event.ageGroup || '';
+  };
+
+  const toSearchableText = (value) => (typeof value === 'string' ? value.toLowerCase() : '');
+
   const filteredEvents = useMemo(() => {
-    let list = nearestEvents;
+    let list = Array.isArray(nearestEvents) ? nearestEvents : [];
 
     if (selectedCategory !== 'all') {
       list = list.filter((event) => event.category === selectedCategory);
@@ -321,11 +349,14 @@ export default function EventsMap() {
       const name = getLocalizedEventText(event, 'name');
       const category = event.category || '';
       const ageGroup = getLocalizedAgeGroup(event);
-      const dayText = String(event.day || '');
+      const dayText = String(event?.day ?? '');
+      const normalizedName = toSearchableText(name);
+      const normalizedCategory = toSearchableText(category);
+      const normalizedAgeGroup = toSearchableText(ageGroup);
       return (
-        name.toLowerCase().includes(term) ||
-        category.toLowerCase().includes(term) ||
-        ageGroup.toLowerCase().includes(term) ||
+        normalizedName.includes(term) ||
+        normalizedCategory.includes(term) ||
+        normalizedAgeGroup.includes(term) ||
         dayText.includes(term)
       );
     });
@@ -358,32 +389,6 @@ export default function EventsMap() {
       className: 'bg-gray-100 text-gray-600 border-gray-200'
     }
   }), [t, language]);
-
-  const getLocalizedEventText = (event, key) => {
-    if (!event) {
-      return '';
-    }
-    if (language === 'kn') {
-      return event[`${key}_kn`] || event[key] || '';
-    }
-    if (language === 'hi') {
-      return event[`${key}_hi`] || event[key] || '';
-    }
-    return event[key] || '';
-  };
-
-  const getLocalizedAgeGroup = (event) => {
-    if (!event) {
-      return '';
-    }
-    if (language === 'kn') {
-      return event.ageGroup_kn || event.ageGroup || '';
-    }
-    if (language === 'hi') {
-      return event.ageGroup_hi || event.ageGroup || '';
-    }
-    return event.ageGroup || '';
-  };
 
   useEffect(() => {
     if (routeSummary && activeEvent) {
