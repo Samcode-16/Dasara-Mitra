@@ -64,4 +64,4 @@ You can generate these values from the [EmailJS dashboard](https://dashboard.ema
 ### Notes
 
 - Geolocation, chatbot responses, and transport results are mock implementations suited for demos.
-- Replace placeholder SVG gallery images with real photos once available.
+
