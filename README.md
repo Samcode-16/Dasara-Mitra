@@ -95,30 +95,61 @@ src/
 └── App.jsx              # App entry point
 ```
 
-🔌 Integrations Guide
-Cloudinary Gallery
-To populate the gallery, upload images to your Cloudinary dashboard and tag them with the value set in VITE_CLOUDINARY_GALLERY_TAG. The app automatically fetches and displays them.
+##  Integrations Guide
 
-EmailJS Contact Form
-The contact form is wired to send emails directly to you. Ensure your EmailJS template expects these variables:
+###  Cloudinary Gallery
+To populate the gallery dynamically:
+1.  Upload your images to your [Cloudinary Dashboard](https://cloudinary.com/).
+2.  Add a specific tag to the images you want to display (e.g., `mysore_dasara`).
+3.  Ensure your `.env` file matches this tag:
+    ```env
+    VITE_CLOUDINARY_GALLERY_TAG=mysore_dasara
+    ```
+The app will automatically fetch and render all images with this tag.
 
-from_name (Sender's Name)
+###  EmailJS Contact Form
+The contact form is wired to send emails directly to your inbox. Ensure your EmailJS template in the dashboard is configured to accept these specific variable names:
 
-email (Sender's Email - Reply-To)
+* `from_name` : The sender's name.
+* `email` : The sender's email address (Set this as the **Reply-To**).
+* `message` : The body of the inquiry.
 
-message (The body text)
+---
 
-⚠️ Note on Mock Data
-Transport & Geolocation: Transport fares and specific geolocation cues are mock implementations designed for demonstration purposes.
+##  Important Notes
 
-AI Security: The Gemini API key is exposed client-side. For a production deployment, it is recommended to proxy these requests through a backend server.
+###  Mock Data
+* **Transport & Geolocation:** The specific fares (bus/auto/taxi) and some geolocation cues are mock implementations designed to demonstrate the UI flow. Real-time API integration (like Uber/Google Maps API) would be required for live routing.
 
-🤝 Contributing
-Contributions are welcome! Please feel free to submit a Pull Request.
+###  AI Security
+* **Gemini API Key:** Currently, the `VITE_GEMINI_API_KEY` is exposed on the client side to keep the project serverless for the demo.
+* **Production Advice:** For a live production deployment, **do not** expose this key. You should proxy these requests through a secure backend server (Node.js/Express) to protect your quota.
 
-## ✍️ Author
+---
 
-**Samudyatha K Bhat** 
-**Deeksha R** 
+##  Contributing
+
+Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+1.  Fork the Project
+2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4.  Push to the Branch (`git push origin feature/AmazingFeature`)
+5.  Open a Pull Request
+
+
+##  Author
+
+**Samudyatha K Bhat**
+
+---
+
+**Deeksha R**
+
+---
+
 **Nicole Tabby**
+
+---
+
 **Spoorthi S**
