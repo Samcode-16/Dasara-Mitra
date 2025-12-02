@@ -11,7 +11,7 @@ export default function GalleryPage() {
         <div className="container mx-auto px-4 text-center space-y-4">
           <h1 className="text-4xl font-bold text-[#800000]">{t('galleryTitle')}</h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Relive golden Dasara memories through curated visuals from palace lights to Chamundi hilltop vistas.
+            {t('galleryHeroDescription')}
           </p>
         </div>
       </section>

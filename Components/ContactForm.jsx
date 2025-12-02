@@ -59,14 +59,16 @@ export default function ContactForm() {
         {
           from_name: trimmedName,
           reply_to: trimmedEmail,
+          email: trimmedEmail,
           message: trimmedMessage
         },
-        { publicKey }
+        publicKey
       );
 
       setStatus({ type: 'success', message: t('contactFormSuccess') });
       resetForm();
     } catch (error) {
+      console.error('EmailJS send error', error);
       setStatus({ type: 'error', message: t('contactFormError') });
     } finally {
       setIsSubmitting(false);

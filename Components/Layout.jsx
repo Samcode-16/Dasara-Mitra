@@ -11,12 +11,6 @@ import { useLanguage, LanguageProvider } from './DasaraContext.jsx';
 function LayoutContent({ children }) {
   const { t } = useLanguage();
 
-  const visitLinks = [
-    { label: t('ctaEvents'), href: '/events#events' },
-    { label: t('ctaGallery'), href: '/gallery' },
-    { label: t('findRoute'), href: '/transport' }
-  ];
-
   const contactDetails = [
     {
       icon: Phone,
@@ -176,28 +170,10 @@ function LayoutContent({ children }) {
                   </li>
                 ))}
               </ul>
-              <ContactForm />
             </div>
 
             <div className="space-y-4">
-              <p className="text-lg font-semibold uppercase tracking-wide text-[#FACC15]">{t('footerVisitTitle')}</p>
-              <div className="h-1 w-14 rounded-full bg-gradient-to-r from-[#FACC15] to-transparent" />
-              <ul className="space-y-2 text-sm text-slate-100/75">
-                {visitLinks.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      to={link.href}
-                      className="group inline-flex items-center gap-2 transition-colors duration-200 hover:text-[#FACC15]"
-                    >
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#FACC15]/70 transition-colors duration-200 group-hover:bg-[#FACC15]" />
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-              <p className="rounded-lg border-l-2 border-[#FACC15]/60 bg-white/5 px-4 py-3 text-xs leading-relaxed text-slate-100/70">
-                {t('footerPlanTip')}
-              </p>
+              <ContactForm />
             </div>
           </div>
 

@@ -11,7 +11,7 @@ export default function Transport() {
         <div className="container mx-auto px-4 text-center space-y-4">
           <h1 className="text-4xl font-bold text-[#800000]">{t('transportTitle')}</h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Plan your way between venues with quick travel estimates across buses, taxis, and autos tuned for the festive rush.
+            {t('transportHeroDescription')}
           </p>
         </div>
       </section>

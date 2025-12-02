@@ -830,6 +830,9 @@ export default function EventsMap() {
                     ))}
                   </ol>
                 </div>
+                <p className="rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2 text-[11px] font-semibold text-amber-900">
+                  {t('footerPlanTip')}
+                </p>
               </div>
             )}
             <MapContainer

@@ -11,7 +11,7 @@ export default function Events() {
         <div className="container mx-auto px-4 text-center space-y-4">
           <h1 className="text-4xl font-bold text-[#800000]">{t('eventsTitle')}</h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Discover marquee Mysuru Dasara highlights, pin their exact locations, and stay informed on start times before you step out.
+            {t('eventsHeroDescription')}
           </p>
         </div>
       </section>
