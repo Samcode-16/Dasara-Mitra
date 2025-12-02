@@ -39,6 +39,18 @@ Outputs are written to the `dist/` directory. Serve them via any static host.
 - **Gallery Images** – Configure Cloudinary by copying `.env.example` to `.env`, then set `VITE_CLOUDINARY_CLOUD_NAME` and `VITE_CLOUDINARY_GALLERY_TAG`. Upload photos to Cloudinary with the chosen tag (or keep the defaults to fall back on local SVG placeholders).
 - **Branding** – Swap `public/images/branding/logo.png` and tweak header colors/styles inside `Components/Header.jsx`.
 
+### Contact Form Email Relay
+
+The footer "Contact us" form sends messages through EmailJS. Provide the following environment variables in `.env` (restart `npm run dev` afterward):
+
+```
+VITE_EMAILJS_SERVICE_ID=<your_emailjs_service_id>
+VITE_EMAILJS_TEMPLATE_ID=<your_emailjs_template_id>
+VITE_EMAILJS_PUBLIC_KEY=<your_emailjs_public_key>
+```
+
+You can generate these values from the [EmailJS dashboard](https://dashboard.emailjs.com/). Update the selected template to expect `from_name`, `reply_to`, and `message` fields, which the app sends by default.
+
 ### Folder Highlights
 
 - `Components/` – UI building blocks including Header, EventsMap, TransportPlanner, Gallery, Layout, and Chatbot.

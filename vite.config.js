@@ -9,4 +9,25 @@ module.exports = defineConfig({
       '@': path.resolve(__dirname, 'src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) {
+            return undefined;
+          }
+          if (id.includes('react')) {
+            return 'vendor-react';
+          }
+          if (id.includes('leaflet')) {
+            return 'vendor-leaflet';
+          }
+          if (id.includes('lucide-react')) {
+            return 'vendor-icons';
+          }
+          return 'vendor-misc';
+        },
+      },
+    },
+  },
 });

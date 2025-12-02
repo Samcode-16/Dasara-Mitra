@@ -100,6 +100,7 @@ export default function TransportPlanner() {
   const [busStops, setBusStops] = useState({});
   const [busLoading, setBusLoading] = useState(true);
   const [busError, setBusError] = useState(null);
+  const uberClientId = import.meta.env.VITE_UBER_CLIENT_ID;
 
   const getLocalizedEventName = (event) => {
     if (!event) return '';
@@ -115,10 +116,46 @@ export default function TransportPlanner() {
     return event.venue || '';
   };
 
+  const selectedFromEvent = useMemo(() => {
+    if (!fromId) return null;
+    return EVENTS_DATA.find((event) => event.id.toString() === fromId) || null;
+  }, [fromId]);
+
+  const selectedToEvent = useMemo(() => {
+    if (!toId) return null;
+    return EVENTS_DATA.find((event) => event.id.toString() === toId) || null;
+  }, [toId]);
+
   const fromEventDetails = route ? EVENTS_DATA.find((event) => event.id === route.fromEventId) : null;
   const toEventDetails = route ? EVENTS_DATA.find((event) => event.id === route.toEventId) : null;
   const fromStops = getNearestStopsForEvent(fromEventDetails, busStops);
   const toStops = getNearestStopsForEvent(toEventDetails, busStops);
+
+  const directBusMatches = useMemo(() => {
+    if (!route || !fromStops.length || !toStops.length) {
+      return [];
+    }
+
+    const matches = [];
+    fromStops.forEach((origin) => {
+      toStops.forEach((destination) => {
+        const shared = origin.buses.filter((bus) => destination.buses.includes(bus));
+        if (shared.length) {
+          matches.push({
+            origin,
+            destination,
+            buses: shared.slice(0, 5),
+            total: shared.length
+          });
+        }
+      });
+    });
+
+    return matches;
+  }, [route, fromStops, toStops]);
+
+  const primaryFromStop = fromStops[0];
+  const primaryToStop = toStops[0];
 
   useEffect(() => {
     let isActive = true;
@@ -225,20 +262,29 @@ export default function TransportPlanner() {
     };
   };
 
-  const pickup = buildRideCoordinates(fromEventDetails);
-  const drop = buildRideCoordinates(toEventDetails);
+  const pickup = buildRideCoordinates(selectedFromEvent);
+  const drop = buildRideCoordinates(selectedToEvent);
+
+  const WALKING_SPEED_KMPH = 4.8;
+  const WALKABLE_DISTANCE_KM = 1.5;
+
+  const isWalkable = route && route.distance <= WALKABLE_DISTANCE_KM;
+  const walkingTimeMinutes = isWalkable
+    ? Math.max(5, Math.round((route.distance / WALKING_SPEED_KMPH) * 60))
+    : null;
 
   const olaUrl = useMemo(() => {
     if (!pickup || !drop) return null;
     try {
       const url = new URL('https://book.olacabs.com/');
-      url.searchParams.set('pickup_name', pickup.name);
-      url.searchParams.set('pickup_lat', pickup.latitude);
-      url.searchParams.set('pickup_lng', pickup.longitude);
-      url.searchParams.set('drop_name', drop.name);
+      url.searchParams.set('lat', pickup.latitude);
+      url.searchParams.set('lng', pickup.longitude);
+      url.searchParams.set('category', 'mini');
       url.searchParams.set('drop_lat', drop.latitude);
       url.searchParams.set('drop_lng', drop.longitude);
-      url.searchParams.set('utm_source', 'dasara_mitra');
+      url.searchParams.set('dsw', 'yes');
+      url.searchParams.set('pickup_name', pickup.name);
+      url.searchParams.set('drop_name', drop.name);
       return url.toString();
     } catch (error) {
       return null;
@@ -250,18 +296,20 @@ export default function TransportPlanner() {
     try {
       const url = new URL('https://m.uber.com/ul/');
       url.searchParams.set('action', 'setPickup');
+      if (uberClientId) {
+        url.searchParams.set('client_id', uberClientId);
+      }
       url.searchParams.set('pickup[latitude]', pickup.latitude);
       url.searchParams.set('pickup[longitude]', pickup.longitude);
       url.searchParams.set('pickup[nickname]', pickup.name);
       url.searchParams.set('dropoff[latitude]', drop.latitude);
       url.searchParams.set('dropoff[longitude]', drop.longitude);
       url.searchParams.set('dropoff[nickname]', drop.name);
-      url.searchParams.set('productType', 'ride');
       return url.toString();
     } catch (error) {
       return null;
     }
-  }, [pickup, drop]);
+  }, [pickup, drop, uberClientId]);
 
   const handleRideRedirect = (url) => {
     if (!url) return;
@@ -320,6 +368,36 @@ export default function TransportPlanner() {
               >
                 {loading ? t('calculating') : t('findRoute')}
               </Button>
+
+              <div className="rounded-xl border border-gray-200 bg-white/70 p-3 space-y-3">
+                <div className="flex items-center justify-between text-xs text-gray-600">
+                  <span>Need a quick cab?</span>
+                  <span className="text-[11px]">(auto-fills pickup & drop)</span>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1 border-yellow-600 text-yellow-700"
+                    onClick={() => handleRideRedirect(olaUrl)}
+                    disabled={!olaUrl}
+                  >
+                    Book Ola
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1 border-black text-black"
+                    onClick={() => handleRideRedirect(uberUrl)}
+                    disabled={!uberUrl}
+                  >
+                    Book Uber
+                  </Button>
+                </div>
+                {!olaUrl || !uberUrl ? (
+                  <p className="text-[11px] text-gray-500">
+                    Select both events to enable ride booking links.
+                  </p>
+                ) : null}
+              </div>
             </CardContent>
           </Card>
 
@@ -363,47 +441,87 @@ export default function TransportPlanner() {
                   )}
 
                   {!busLoading && !busError && (
-                    <div className="mt-3 grid gap-4 md:grid-cols-2">
-                      {[{ event: fromEventDetails, stops: fromStops }, { event: toEventDetails, stops: toStops }].map((segment, idx) => (
-                        <div key={idx} className="rounded-xl border border-yellow-100 bg-white/80 p-3">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-[#a25400]">
-                            {getLocalizedEventName(segment.event) || (idx === 0 ? t('fromEvent') : t('toEvent'))}
-                          </p>
-                          {segment.event?.venue && (
-                            <p className="text-[11px] text-gray-500 mt-0.5">
-                              {t('eventVenueLabel')}: {getLocalizedVenue(segment.event)}
+                    <>
+                      <div className="mt-3 grid gap-4 md:grid-cols-2">
+                        {[{ event: fromEventDetails, stops: fromStops }, { event: toEventDetails, stops: toStops }].map((segment, idx) => (
+                          <div key={idx} className="rounded-xl border border-yellow-100 bg-white/80 p-3">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-[#a25400]">
+                              {getLocalizedEventName(segment.event) || (idx === 0 ? t('fromEvent') : t('toEvent'))}
                             </p>
-                          )}
-                          {segment.stops && segment.stops.length ? (
-                            <ul className="mt-2 space-y-2">
-                              {segment.stops.map((stop) => {
-                                const maxToShow = 5;
-                                const busesToShow = stop.buses.slice(0, maxToShow);
-                                const remaining = stop.buses.length - busesToShow.length;
-                                return (
-                                  <li key={`${segment.event?.id || idx}-${stop.name}`} className="rounded-lg border border-yellow-100 bg-yellow-50/80 p-3">
-                                    <div className="flex items-center justify-between text-sm font-semibold text-gray-900">
-                                      <span>{stop.name}</span>
-                                      {typeof stop.distanceKm === 'number' ? (
-                                        <span className="text-xs font-medium text-gray-500">
-                                          ≈ {stop.distanceKm.toFixed(1)} {t('kilometersUnit')}
-                                        </span>
-                                      ) : null}
-                                    </div>
-                                    <p className="mt-1 text-xs text-gray-600">
-                                      {t('busListLabel')}: {busesToShow.join(', ')}
-                                      {remaining > 0 ? ` +${remaining}` : ''}
+                            {segment.event?.venue && (
+                              <p className="text-[11px] text-gray-500 mt-0.5">
+                                {t('eventVenueLabel')}: {getLocalizedVenue(segment.event)}
+                              </p>
+                            )}
+                            {segment.stops && segment.stops.length ? (
+                              <ul className="mt-2 space-y-2">
+                                {segment.stops.map((stop) => {
+                                  const maxToShow = 5;
+                                  const busesToShow = stop.buses.slice(0, maxToShow);
+                                  const remaining = stop.buses.length - busesToShow.length;
+                                  return (
+                                    <li key={`${segment.event?.id || idx}-${stop.name}`} className="rounded-lg border border-yellow-100 bg-yellow-50/80 p-3">
+                                      <div className="flex items-center justify-between text-sm font-semibold text-gray-900">
+                                        <span>{stop.name}</span>
+                                        {typeof stop.distanceKm === 'number' ? (
+                                          <span className="text-xs font-medium text-gray-500">
+                                            ≈ {stop.distanceKm.toFixed(1)} {t('kilometersUnit')}
+                                          </span>
+                                        ) : null}
+                                      </div>
+                                      <p className="mt-1 text-xs text-gray-600">
+                                        {t('busListLabel')}: {busesToShow.join(', ')}
+                                        {remaining > 0 ? ` +${remaining}` : ''}
+                                      </p>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            ) : (
+                              <p className="mt-2 text-xs text-gray-500">{t('busNoStops')}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {route && (
+                        <div className="mt-4 space-y-3">
+                          {directBusMatches.length ? (
+                            <div className="rounded-xl border border-green-200 bg-green-50/80 p-3">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-green-800">Direct KSRTC buses</p>
+                              <ul className="mt-2 space-y-2 text-sm text-green-900">
+                                {directBusMatches.slice(0, 3).map((match, idx) => (
+                                  <li key={`direct-${idx}`} className="rounded-lg bg-white/70 p-3">
+                                    <p className="font-semibold">
+                                      {match.buses.join(', ')}
+                                      {match.total > match.buses.length ? ` +${match.total - match.buses.length}` : ''}
+                                    </p>
+                                    <p className="text-xs text-green-700 mt-1">
+                                      {match.origin.name} → {match.destination.name}
                                     </p>
                                   </li>
-                                );
-                              })}
-                            </ul>
+                                ))}
+                              </ul>
+                            </div>
                           ) : (
-                            <p className="mt-2 text-xs text-gray-500">{t('busNoStops')}</p>
+                            <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-sm text-amber-900">
+                              <p className="font-semibold text-amber-900">Transfer required</p>
+                              <p className="text-xs text-amber-700 mt-1">
+                                No single KSRTC bus covers both nearest stops.
+                                {primaryFromStop
+                                  ? ` Start from ${primaryFromStop.name} on buses like ${primaryFromStop.buses
+                                      .slice(0, 4)
+                                      .join(', ')} and switch at a central hub (City Bus Stand, KR Circle, or Hardinge Circle).`
+                                  : ' Start from one of the departure stops listed above and change at a central hub.'}
+                                {primaryToStop
+                                  ? ` Then board buses such as ${primaryToStop.buses.slice(0, 4).join(', ')} towards ${primaryToStop.name}.`
+                                  : ' Finally, take one of the destination buses shown above to reach your event.'}
+                              </p>
+                            </div>
                           )}
                         </div>
-                      ))}
-                    </div>
+                      )}
+                    </>
                   )}
                 </div>
 
@@ -413,6 +531,20 @@ export default function TransportPlanner() {
                     ≈ {route.distance.toFixed(1)} {t('kilometersUnit')}
                   </span>
                 </h3>
+
+                {isWalkable && (
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 flex gap-3 items-center">
+                    <div className="p-3 rounded-full bg-emerald-100 text-emerald-700 font-semibold">
+                      🚶
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-emerald-900">Walk-friendly stretch</p>
+                      <p className="text-xs text-emerald-800">
+                        Distance is only ~{route.distance.toFixed(1)} km — you can walk there in about {walkingTimeMinutes} minutes if sidewalks feel safe.
+                      </p>
+                    </div>
+                  </div>
+                )}
                 
                 {route.options.map((opt, idx) => (
                   <Card key={idx} className="hover:shadow-md transition-all cursor-pointer active:scale-[0.99]">
@@ -445,25 +577,6 @@ export default function TransportPlanner() {
                   </Card>
                 ))}
                 
-                <div className="pt-4 flex gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1 border-yellow-600 text-yellow-700"
-                    onClick={() => handleRideRedirect(olaUrl)}
-                    disabled={!olaUrl}
-                  >
-                    Book Ola
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="flex-1 border-black text-black"
-                    onClick={() => handleRideRedirect(uberUrl)}
-                    disabled={!uberUrl}
-                  >
-                    Book Uber
-                  </Button>
-                </div>
-
               </div>
             )}
           </div>

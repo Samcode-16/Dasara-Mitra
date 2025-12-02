@@ -4,11 +4,12 @@ import { MapPin, Route, Camera, CalendarDays, Phone, Mail, Clock } from 'lucide-
 import Header from './Header.jsx';
 import Chatbot from './Chatbot.jsx';
 import VoiceAssistant from './VoiceAssistant.jsx';
+import ContactForm from './ContactForm.jsx';
 import { Button } from './ui.jsx';
 import { useLanguage, LanguageProvider } from './DasaraContext.jsx';
 
 function LayoutContent({ children }) {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
 
   const visitLinks = [
     { label: t('ctaEvents'), href: '/events#events' },
@@ -45,28 +46,19 @@ function LayoutContent({ children }) {
     {
       icon: MapPin,
       title: t('eventsTitle'),
-      description:
-        language === 'kn'
-          ? 'ನಗರದಲ್ಲಿ ನಡೆಯುವ ದಸರಾ ಕಾರ್ಯಕ್ರಮಗಳನ್ನು ಸುಲಭವಾಗಿ ಪತ್ತೆ ಹಚ್ಚಿ.'
-          : 'Pin every Mysuru celebration and dive into the royal schedule.',
+      description: t('footerEventsCardDescription'),
       href: '/events'
     },
     {
       icon: Route,
       title: t('transportTitle'),
-      description:
-        language === 'kn'
-          ? 'ಮೆರವಣಿಗೆ ದಾರಿಗಳ ಬದಲಾವಣೆ ಮತ್ತು ಶಟಲ್ ಆಯ್ಕೆಗಳನ್ನು ಯೋಜಿಸಿ.'
-          : 'Plan diversions, shuttles, and festival commutes with confidence.',
+      description: t('footerTransportCardDescription'),
       href: '/transport'
     },
     {
       icon: Camera,
       title: t('galleryTitle'),
-      description:
-        language === 'kn'
-          ? 'ಅರಮನೆ ಬೆಳಕು ಮತ್ತು ಸಾಂಸ್ಕೃತಿಕ ಕ್ಷಣಗಳನ್ನು ಮರು ಅನುಭವಿಸಿ.'
-          : 'Relive palace illuminations and cultural memories on demand.',
+      description: t('footerGalleryCardDescription'),
       href: '/gallery'
     },
     {
@@ -111,7 +103,7 @@ function LayoutContent({ children }) {
                       {card.description}
                     </p>
                     <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#FDE68A]">
-                      {language === 'kn' ? 'ಇನ್ನಷ್ಟು ಅನ್ವೇಷಿಸಿ' : 'Explore'}
+                      {t('footerExploreCta')}
                       <span aria-hidden="true">→</span>
                     </span>
                   </div>
@@ -184,6 +176,7 @@ function LayoutContent({ children }) {
                   </li>
                 ))}
               </ul>
+              <ContactForm />
             </div>
 
             <div className="space-y-4">
