@@ -100,6 +100,7 @@ export default function TransportPlanner() {
   const [busStops, setBusStops] = useState({});
   const [busLoading, setBusLoading] = useState(true);
   const [busError, setBusError] = useState(null);
+  const [olaError, setOlaError] = useState(null);
 
   const getLocalizedEventName = (event) => {
     if (!event) return '';
@@ -217,6 +218,10 @@ export default function TransportPlanner() {
     };
   }, []);
 
+  useEffect(() => {
+    setOlaError(null);
+  }, [selectedFromEvent, selectedToEvent]);
+
   const handleCalculate = () => {
     if (!fromId || !toId || fromId === toId) return;
     
@@ -231,9 +236,6 @@ export default function TransportPlanner() {
       }
       const preciseDistance = distanceInKm(fromEvent.lat, fromEvent.lng, toEvent.lat, toEvent.lng);
       const distance = Number.isFinite(preciseDistance) ? Math.max(0.5, parseFloat(preciseDistance.toFixed(1))) : 2;
-      const busDuration = Math.round(distance * 7 + 12);
-      const busCost = Math.max(12, Math.round(distance * 5 + 10));
-      
       setRoute({
         fromEventId: fromEvent.id,
         toEventId: toEvent.id,
@@ -264,24 +266,6 @@ export default function TransportPlanner() {
   const walkingTimeMinutes = isWalkable
     ? Math.max(5, Math.round((route.distance / WALKING_SPEED_KMPH) * 60))
     : null;
-
-  const olaUrl = useMemo(() => {
-    if (!pickup || !drop) return null;
-    try {
-      const url = new URL('https://book.olacabs.com/');
-      url.searchParams.set('lat', pickup.latitude);
-      url.searchParams.set('lng', pickup.longitude);
-      url.searchParams.set('category', 'mini');
-      url.searchParams.set('drop_lat', drop.latitude);
-      url.searchParams.set('drop_lng', drop.longitude);
-      url.searchParams.set('dsw', 'yes');
-      url.searchParams.set('pickup_name', pickup.name);
-      url.searchParams.set('drop_name', drop.name);
-      return url.toString();
-    } catch (error) {
-      return null;
-    }
-  }, [pickup, drop]);
 
   const uberUrl = useMemo(() => {
     if (!pickup || !drop) return null;
@@ -330,9 +314,28 @@ export default function TransportPlanner() {
     }
   }, [pickup, drop]);
 
-  const handleRideRedirect = (url) => {
-    if (!url) return;
-    window.open(url, '_blank', 'noopener,noreferrer');
+  const handleOlaBooking = () => {
+    const pickupPoint = buildRideCoordinates(selectedFromEvent);
+    const dropPoint = buildRideCoordinates(selectedToEvent);
+    if (!pickupPoint || !dropPoint) {
+      setOlaError('Select both events to auto-fill Ola.');
+      return;
+    }
+    setOlaError(null);
+    try {
+      const url = new URL('https://book.olacabs.com/');
+      url.searchParams.set('lat', pickupPoint.latitude);
+      url.searchParams.set('lng', pickupPoint.longitude);
+      url.searchParams.set('category', 'mini');
+      url.searchParams.set('drop_lat', dropPoint.latitude);
+      url.searchParams.set('drop_lng', dropPoint.longitude);
+      url.searchParams.set('dsw', 'yes');
+      url.searchParams.set('pickup_name', pickupPoint.name);
+      url.searchParams.set('drop_name', dropPoint.name);
+      window.open(url.toString(), '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      setOlaError('Unable to open Ola booking right now.');
+    }
   };
 
   const handleUberRedirect = (webUrl, appUrl) => {
@@ -422,8 +425,8 @@ export default function TransportPlanner() {
                   <Button
                     variant="outline"
                     className="flex-1 border-yellow-600 text-yellow-700"
-                    onClick={() => handleRideRedirect(olaUrl)}
-                    disabled={!olaUrl}
+                    onClick={handleOlaBooking}
+                    disabled={!selectedFromEvent || !selectedToEvent}
                   >
                     Book Ola
                   </Button>
@@ -436,11 +439,15 @@ export default function TransportPlanner() {
                     Book Uber
                   </Button>
                 </div>
-                {!olaUrl || !uberUrl ? (
+                {olaError ? (
+                  <p className="text-[11px] text-red-600">{olaError}</p>
+                ) : (
                   <p className="text-[11px] text-gray-500">
-                    Select both events to enable ride booking links.
+                    {selectedFromEvent && selectedToEvent
+                      ? 'Pick-up uses your selected starting event; drop uses the destination event.'
+                      : 'Select both events to enable ride booking links.'}
                   </p>
-                ) : null}
+                )}
               </div>
             </CardContent>
           </Card>
