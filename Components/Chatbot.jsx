@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, Send, X, RefreshCw } from 'lucide-react';
 import { Button, Input } from './ui.jsx';
 import { useLanguage } from './DasaraContext';
-import { askFestivalAssistant } from './assistantClient.js';
+const CHAT_ENDPOINT = '/api/chat';
 
 const getAssistantGreeting = (lang) => {
   if (lang === 'kn') {
@@ -54,14 +54,30 @@ export default function Chatbot() {
     setIsLoading(true);
 
     try {
-      // Construct a prompt that includes context
-      const reply = await askFestivalAssistant({
-        userMessage: userMsg,
-        languageCode: responseLanguage,
-        history: messages
+      const trimmedHistory = messages
+        .slice(-6)
+        .map((entry) => ({ role: entry.role, content: entry.content }));
+
+      const resp = await fetch(CHAT_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: userMsg,
+          language: responseLanguage,
+          history: trimmedHistory
+        })
       });
 
-      setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok || data.error) {
+        throw new Error(data.error || data.message || resp.statusText || 'assistant-proxy-error');
+      }
+
+      if (!data.reply) {
+        throw new Error('empty-response');
+      }
+
+      setMessages((prev) => [...prev, { role: 'assistant', content: data.reply }]);
     } catch (error) {
       console.error("Chat error:", error);
       const problem = error?.message || '';
