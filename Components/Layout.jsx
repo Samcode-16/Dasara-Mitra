@@ -28,11 +28,6 @@ function LayoutContent({ children }) {
       icon: Clock,
       label: t('footerContactHoursLabel'),
       value: t('footerContactHoursValue')
-    },
-    {
-      icon: MapPin,
-      label: t('footerContactOfficeLabel'),
-      value: t('footerContactOfficeValue')
     }
   ];
 

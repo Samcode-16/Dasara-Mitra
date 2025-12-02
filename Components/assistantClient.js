@@ -10,7 +10,8 @@ const NAMASKARA_PREFIX = {
   hi: 'नमस्कार'
 };
 
-const modelUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+const assistantBase = (import.meta.env.VITE_ASSISTANT_API_BASE_URL?.trim() || '').replace(/\/$/, '');
+const assistantEndpoint = `${assistantBase}/api/assistant`;
 
 const buildSystemInstruction = (languageCode = 'en') => {
   const languageHint = LANGUAGE_HINTS[languageCode] || LANGUAGE_HINTS.en;
@@ -27,11 +28,6 @@ const buildSystemInstruction = (languageCode = 'en') => {
 };
 
 export async function askFestivalAssistant({ userMessage, languageCode = 'en', history = [] }) {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY?.trim();
-  if (!apiKey) {
-    throw new Error('missing-api-key');
-  }
-
   const languageHint = LANGUAGE_HINTS[languageCode] || LANGUAGE_HINTS.en;
 
   const trimmedHistory = history
@@ -50,23 +46,29 @@ export async function askFestivalAssistant({ userMessage, languageCode = 'en', h
     }
   ];
 
-  const response = await fetch(`${modelUrl}?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents,
-      system_instruction: buildSystemInstruction(languageCode),
-      generation_config: {
-        temperature: languageCode === 'kn' ? 0.7 : languageCode === 'hi' ? 0.65 : 0.6,
-        top_p: 0.95,
-        top_k: 40
-      }
-    })
-  });
+  let response;
+  try {
+    response = await fetch(assistantEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents,
+        system_instruction: buildSystemInstruction(languageCode),
+        generation_config: {
+          temperature: languageCode === 'kn' ? 0.7 : languageCode === 'hi' ? 0.65 : 0.6,
+          top_p: 0.95,
+          top_k: 40
+        }
+      })
+    });
+  } catch (networkError) {
+    console.error('Assistant proxy unreachable:', networkError);
+    throw new Error('assistant-offline');
+  }
 
   if (!response.ok) {
     const details = await response.json().catch(() => ({}));
-    const message = details?.error?.message || response.statusText || 'Gemini request failed';
+    const message = details?.error?.message || details?.error || response.statusText || 'assistant-proxy-error';
     throw new Error(message);
   }
 

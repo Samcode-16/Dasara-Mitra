@@ -63,7 +63,8 @@ const CLOUDINARY_SECTIONS = [
   { tag: 'mysuru_chamundi_temple', titleKey: 'gallerySectionChamundiTitle', blurbKey: 'gallerySectionChamundiBlurb' },
   { tag: 'mysuru_exhibition', titleKey: 'gallerySectionExhibitionTitle', blurbKey: 'gallerySectionExhibitionBlurb' },
   { tag: 'mysuru_dasara_tableau', titleKey: 'gallerySectionTableauTitle', blurbKey: 'gallerySectionTableauBlurb' },
-  { tag: 'mysuru_wrestling_tournament', titleKey: 'gallerySectionWrestlingTitle', blurbKey: 'gallerySectionWrestlingBlurb' }
+  { tag: 'mysuru_wrestling_tournament', titleKey: 'gallerySectionWrestlingTitle', blurbKey: 'gallerySectionWrestlingBlurb' },
+  { tag: 'mysuru_drone_show', titleKey: 'gallerySectionDroneTitle', blurbKey: 'gallerySectionDroneBlurb' }
 ];
 
 const getLocalizedFallback = (language) =>

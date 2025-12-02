@@ -66,8 +66,10 @@ export default function Chatbot() {
       console.error("Chat error:", error);
       const problem = error?.message || '';
 
-      if (problem === 'missing-api-key') {
-        setMessages(prev => [...prev, { role: 'assistant', content: 'Chat configuration is missing. Please add your Google Gemini API key.' }]);
+      if (problem === 'missing-api-key' || problem === 'missing-server-key') {
+        setMessages(prev => [...prev, { role: 'assistant', content: 'Chat configuration is missing. Please add your Gemini key to the backend proxy.' }]);
+      } else if (problem === 'assistant-offline') {
+        setMessages(prev => [...prev, { role: 'assistant', content: 'The Dasara helper service is offline. Start the backend proxy and try again.' }]);
       } else if (problem === 'empty-response') {
         setMessages(prev => [...prev, { role: 'assistant', content: 'I could not find festival details right now. Try asking again in a moment.' }]);
       } else if (problem.startsWith('blocked:')) {

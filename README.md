@@ -68,10 +68,11 @@ It bridges the gap between tradition and technology by offering a fully bilingua
     | :---------------------------- | :---------------------------------------------------- |
     | `VITE_GEMINI_API_KEY`         | Your Google AI Studio API Key for the chatbot.        |
     | `VITE_CLOUDINARY_CLOUD_NAME`  | Your Cloudinary Cloud Name.                           |
-    | `VITE_CLOUDINARY_GALLERY_TAG` | The tag used to fetch images (e.g., `mysore_dasara`). |
+    | `VITE_CLOUDINARY_GALLERY_TAGS` | Comma-separated Cloudinary tags (e.g., `mysuru_palace,...`). |
     | `VITE_EMAILJS_SERVICE_ID`     | EmailJS Service ID.                                   |
     | `VITE_EMAILJS_TEMPLATE_ID`    | EmailJS Template ID.                                  |
     | `VITE_EMAILJS_PUBLIC_KEY`     | EmailJS Public Key.                                   |
+    | `VITE_ASSISTANT_API_BASE_URL` | URL of the backend proxy (default `http://localhost:4000`). |
 
 4.  **Run the development server**
     ```bash
@@ -111,6 +112,17 @@ The contact form is wired to send emails directly to your inbox. Ensure your Ema
 * `email` : The sender's email address (Set this as the **Reply-To**).
 * `message` : The body of the inquiry.
 
+###  Secure Gemini Proxy
+Keep the Gemini key on the server by running the bundled Express proxy:
+
+1.  `cd server && cp .env.example .env`
+2.  Add `GEMINI_API_KEY`, adjust `PORT`, `ALLOWED_ORIGINS`, or `GEMINI_MODEL` if needed.
+3.  Install backend deps once with `npm install` inside `server/`.
+4.  Start the proxy via `npm run dev` (or from the project root with `npm run server`).
+5.  Point `VITE_ASSISTANT_API_BASE_URL` in the root `.env` to the proxy URL.
+
+The frontend now calls `/api/assistant`, so the Gemini key never ships to the browser. Deploy the proxy to any Node-friendly host for production.
+
 ---
 
 ##  Important Notes
@@ -119,8 +131,8 @@ The contact form is wired to send emails directly to your inbox. Ensure your Ema
 * **Transport & Geolocation:** The specific fares (bus/auto/taxi) and some geolocation cues are mock implementations designed to demonstrate the UI flow. Real-time API integration (like Uber/Google Maps API) would be required for live routing.
 
 ###  AI Security
-* **Gemini API Key:** Currently, the `VITE_GEMINI_API_KEY` is exposed on the client side to keep the project serverless for the demo.
-* **Production Advice:** For a live production deployment, **do not** expose this key. You should proxy these requests through a secure backend server (Node.js/Express) to protect your quota.
+* **Gemini Proxy:** The `server/` folder  includes a lightweight Express proxy that keeps `GEMINI_API_KEY` on the server.
+* **Production Advice:** Always route Gemini calls through this proxy (or your own secure backend) before deploying. 
 
 ---
 
