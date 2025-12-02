@@ -93,6 +93,7 @@ src/
 ├── pages/
 │   └── Home.jsx         # Main landing page
 └── App.jsx              # App entry point
+```
 
 🔌 Integrations Guide
 Cloudinary Gallery
