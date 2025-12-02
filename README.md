@@ -101,10 +101,7 @@ src/
 To populate the gallery dynamically:
 1.  Upload your images to your [Cloudinary Dashboard](https://cloudinary.com/).
 2.  Add a specific tag to the images you want to display (e.g., `mysore_dasara`).
-3.  Ensure your `.env` file matches this tag:
-    ```env
-    VITE_CLOUDINARY_GALLERY_TAG=mysore_dasara
-    ```
+3.  Ensure your `.env` file matches the tag in the cloudinary.
 The app will automatically fetch and render all images with this tag.
 
 ###  EmailJS Contact Form
