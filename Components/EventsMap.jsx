@@ -147,7 +147,7 @@ export default function EventsMap() {
   const [selectedDay, setSelectedDay] = useState('all');
   const [selectedAgeGroup, setSelectedAgeGroup] = useState('all');
   const [routeInstructions, setRouteInstructions] = useState([]);
-  const [processionCardPinned, setProcessionCardPinned] = useState(true);
+  const [processionCardPinned, setProcessionCardPinned] = useState(false);
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
 
@@ -744,8 +744,8 @@ export default function EventsMap() {
               <div
                 className={`absolute right-4 top-20 w-72 bg-white/95 border border-orange-200 rounded-xl shadow-lg p-4 space-y-3 transition-all duration-200 ${
                   processionCardPinned
-                    ? 'z-[1000] opacity-100 pointer-events-auto'
-                    : 'z-[10] opacity-60 pointer-events-none'
+                    ? 'z-[1000] opacity-100 pointer-events-auto translate-y-0'
+                    : 'z-[10] opacity-0 pointer-events-none translate-y-2'
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
