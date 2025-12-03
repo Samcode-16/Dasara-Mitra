@@ -69,6 +69,7 @@ It bridges the gap between tradition and technology by offering a fully bilingua
     | `VITE_GEMINI_API_KEY`         | Your Google AI Studio API Key for the chatbot.        |
     | `VITE_CLOUDINARY_CLOUD_NAME`  | Your Cloudinary Cloud Name.                           |
     | `VITE_CLOUDINARY_GALLERY_TAGS` | Comma-separated Cloudinary tags (e.g., `mysuru_palace,...`). |
+    | `VITE_EVENT_CLOUDINARY_TAGS` | JSON map of event IDs to Cloudinary tags/public IDs (e.g., `{ "1": "dasara_jamboo_savari" }`). |
     | `VITE_EMAILJS_SERVICE_ID`     | EmailJS Service ID.                                   |
     | `VITE_EMAILJS_TEMPLATE_ID`    | EmailJS Template ID.                                  |
     | `VITE_EMAILJS_PUBLIC_KEY`     | EmailJS Public Key.                                   |

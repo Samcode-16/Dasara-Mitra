@@ -68,10 +68,19 @@ const CLOUDINARY_SECTIONS = [
   { tag: 'mysuru_vintage_car_rally', titleKey: 'gallerySectionVintageTitle', blurbKey: 'gallerySectionVintageBlurb' }
 ];
 
-const GALLERY_CACHE_KEY = 'dasara-gallery-cache-v1';
-const GALLERY_CACHE_TTL = 1000 * 60 * 30; // 30 minutes
+const GALLERY_CACHE_KEY = 'dasara-gallery-cache-v2';
+const GALLERY_CACHE_TTL = 1000 * 60 * 60 * 6; // 6 hours
 
-const getStorage = () => (typeof window !== 'undefined' ? window.sessionStorage : null);
+const getStorage = () => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  try {
+    return window.localStorage;
+  } catch (error) {
+    return null;
+  }
+};
 
 const readGalleryCache = (cloudName, tags) => {
   const storage = getStorage();

@@ -272,24 +272,6 @@ export const EVENTS_DATA = [
     ageGroup_hi: 'सभी आयु'
   },
   {
-    id: 16,
-    name: "Yoga by the Palace",
-    name_kn: "ಅರಮನೆ ಬಳಿ ಯೋಗ",
-    name_hi: "महल के पास योग",
-    lat: 12.3046,
-    lng: 76.6555,
-    description: "Sunrise yoga sessions led by renowned instructors with palace backdrop.",
-    description_kn: "ಪರಿಚಿತ ಶಿಕ್ಷಕರಿಂದ ಅರಮನೆ ಹಿನ್ನೆಲೆಯೊಂದಿಗೆ ಸೂರ್ಯೋದಯ ಯೋಗ ಶಿಬಿರ.",
-    description_hi: "प्रसिद्ध प्रशिक्षकों के साथ महल की पृष्ठभूमि में सूर्योदय योग सत्र।",
-    time: "Oct 3-9, 6:00 AM",
-    category: "Wellness",
-    day: 2,
-    status: 'live',
-    ageGroup: 'Adults',
-    ageGroup_kn: 'ವಯಸ್ಕರು',
-    ageGroup_hi: 'वयस्क'
-  },
-  {
     id: 17,
     name: "Folk Dance Utsav",
     name_kn: "ಜನಪದ ನೃತ್ಯ ಉತ್ಸವ",
@@ -382,10 +364,6 @@ const EVENT_VENUE_MAP = {
   },
   15: {
     venue: 'Mysuru Palace Forecourt',
-    nearbyStops: ['palace bus stop', 'hardinge circle']
-  },
-  16: {
-    venue: 'Eastern Lawns, Mysuru Palace',
     nearbyStops: ['palace bus stop', 'hardinge circle']
   },
   17: {

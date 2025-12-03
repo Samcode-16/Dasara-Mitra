@@ -66,6 +66,72 @@ const PROCESSION_BASELINE_ROUTE = [
   [12.3340167, 76.6549883]
 ];
 
+const FALLBACK_EVENT_CLOUDINARY_TAGS = {
+  1: 'dasara_jamboo_savari',
+  2: 'dasara_torchlight',
+  3: 'dasara_palace_illu',
+  4: 'dasara_exhibition',
+  5: 'dasara_flower_show',
+  6: 'dasara_yuva',
+  7: 'dasara_wrestling',
+  8: 'dasara_kavi_goshti',
+  9: 'dasara_ahara_mela',
+ 10: 'dasara_palace_cultural',
+ 11: 'dasara_drone_show',
+ 12: 'dasara_heritage_show',
+ 13: 'dasara_makkala',
+ 14: 'dasara_raitha',
+ 15: 'dasara_vintage_car',
+ 17: 'dasara_folk_dance',
+ 18: 'dasara_adv_zone'
+};
+
+const IMAGE_CACHE_STORAGE_KEY = 'dasara-events-image-cache';
+const IMAGE_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
+
+const stripQuotes = (value = '') => value.replace(/^['"`]+|['"`]+$/g, '');
+
+const parseEventImageTagConfig = () => {
+  const raw = import.meta.env.VITE_EVENT_CLOUDINARY_TAGS;
+  if (!raw || !raw.trim()) {
+    return FALLBACK_EVENT_CLOUDINARY_TAGS;
+  }
+
+  const normalized = {};
+  const assignPair = (key, value) => {
+    if (!key || !value) {
+      return;
+    }
+    const trimmedKey = stripQuotes(String(key).trim());
+    const trimmedValue = stripQuotes(String(value).trim());
+    if (!trimmedKey || !trimmedValue) {
+      return;
+    }
+    normalized[trimmedKey] = trimmedValue;
+  };
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object') {
+      Object.entries(parsed).forEach(([key, value]) => assignPair(key, value));
+    }
+  } catch (error) {
+    raw.split(',').forEach((entry) => {
+      const [key, value] = entry.split(':');
+      assignPair(key, value);
+    });
+  }
+
+  if (!Object.keys(normalized).length) {
+    return FALLBACK_EVENT_CLOUDINARY_TAGS;
+  }
+
+  return {
+    ...FALLBACK_EVENT_CLOUDINARY_TAGS,
+    ...normalized
+  };
+};
+
 // Function to get road-following route between waypoints
 const getProcessionRoute = async () => {
   const palaceStart = {lat: 12.304109, lng: 76.655382};
@@ -133,6 +199,8 @@ const PROCESSION_LANDMARKS = [
 
 export default function EventsMap() {
   const { t, language } = useLanguage();
+  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+  const eventImageTags = useMemo(() => parseEventImageTagConfig(), []);
   const [userLocation, setUserLocation] = useState(null);
   const [nearestEvents, setNearestEvents] = useState([]);
   const [permissionStatus, setPermissionStatus] = useState('prompt');
@@ -148,8 +216,10 @@ export default function EventsMap() {
   const [selectedAgeGroup, setSelectedAgeGroup] = useState('all');
   const [routeInstructions, setRouteInstructions] = useState([]);
   const [processionCardPinned, setProcessionCardPinned] = useState(false);
+  const [eventCardImages, setEventCardImages] = useState({});
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
+  const eventImageCacheRef = useRef(new Map());
 
   useEffect(() => {
     calculateDistances(EVENTS_DATA, null); // Initial load without user location
@@ -201,6 +271,157 @@ export default function EventsMap() {
     return () => resizeObserver.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    if (!cloudName) {
+      setEventCardImages({});
+      return undefined;
+    }
+
+    const entries = Object.entries(eventImageTags).filter(([, tag]) => Boolean(tag));
+    if (!entries.length) {
+      setEventCardImages({});
+      return undefined;
+    }
+
+    let cancelled = false;
+    const cache = eventImageCacheRef.current;
+
+    const persistCacheToStorage = () => {
+      try {
+        const serializable = Object.fromEntries(cache.entries());
+        const payload = {
+          timestamp: Date.now(),
+          data: serializable,
+        };
+        localStorage.setItem(IMAGE_CACHE_STORAGE_KEY, JSON.stringify(payload));
+      } catch (error) {
+        console.warn('Unable to persist event image cache', error);
+      }
+    };
+
+    const hydrateCacheFromStorage = () => {
+      try {
+        const raw = localStorage.getItem(IMAGE_CACHE_STORAGE_KEY);
+        if (!raw) {
+          return;
+        }
+        const parsed = JSON.parse(raw);
+        if (!parsed?.data || typeof parsed.data !== 'object') {
+          return;
+        }
+        if (parsed.timestamp && Date.now() - parsed.timestamp > IMAGE_CACHE_TTL_MS) {
+          localStorage.removeItem(IMAGE_CACHE_STORAGE_KEY);
+          return;
+        }
+        Object.entries(parsed.data).forEach(([tag, url]) => {
+          if (typeof tag === 'string' && typeof url === 'string') {
+            cache.set(tag, url);
+          }
+        });
+      } catch (error) {
+        console.warn('Unable to read event image cache', error);
+      }
+    };
+
+    hydrateCacheFromStorage();
+
+    const buildImageUrl = (publicId, format) => {
+      if (!publicId) {
+        return null;
+      }
+      const extension = format ? `.${format}` : '';
+      return `https://res.cloudinary.com/${cloudName}/image/upload/f_auto,q_auto,w_900,h_500,c_fill/${publicId}${extension}`;
+    };
+
+    const fetchByTag = async (tag) => {
+      const normalizedTag = String(tag || '').trim();
+      if (!normalizedTag) {
+        return null;
+      }
+
+      if (cache.has(normalizedTag)) {
+        return cache.get(normalizedTag);
+      }
+
+      if (/^https?:\/\//i.test(normalizedTag)) {
+        cache.set(normalizedTag, normalizedTag);
+        persistCacheToStorage();
+        return normalizedTag;
+      }
+
+      const manifestUrl = `https://res.cloudinary.com/${cloudName}/image/list/${normalizedTag}.json`;
+      try {
+        const response = await fetch(manifestUrl);
+        if (response.ok) {
+          const data = await response.json();
+          const resource = Array.isArray(data?.resources) ? data.resources[0] : null;
+          if (resource?.public_id) {
+            const url = buildImageUrl(resource.public_id, resource.format);
+            cache.set(normalizedTag, url);
+            persistCacheToStorage();
+            return url;
+          }
+        }
+      } catch (error) {
+        console.warn('Unable to fetch Cloudinary tag manifest', normalizedTag, error);
+      }
+
+      const fallbackUrl = buildImageUrl(normalizedTag);
+      cache.set(normalizedTag, fallbackUrl);
+      persistCacheToStorage();
+      return fallbackUrl;
+    };
+
+    const seedImagesFromCache = () => {
+      const cached = {};
+      entries.forEach(([eventId, tag]) => {
+        const normalizedTag = String(tag || '').trim();
+        if (!normalizedTag) {
+          return;
+        }
+        const cachedUrl = cache.get(normalizedTag);
+        if (cachedUrl) {
+          cached[eventId] = cachedUrl;
+        }
+      });
+
+      if (Object.keys(cached).length) {
+        setEventCardImages((prev) => ({ ...cached, ...prev }));
+      }
+    };
+
+    seedImagesFromCache();
+
+    const resolveImages = async () => {
+      const results = await Promise.all(entries.map(async ([eventId, tag]) => {
+        const url = await fetchByTag(tag);
+        return [eventId, url];
+      }));
+
+      if (cancelled) {
+        return;
+      }
+
+      const imageMap = {};
+      results.forEach(([eventId, url]) => {
+        if (url) {
+          imageMap[eventId] = url;
+        }
+      });
+      setEventCardImages(imageMap);
+    };
+
+    resolveImages();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cloudName, eventImageTags]);
+
   const handleGetLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -237,12 +458,11 @@ export default function EventsMap() {
       return;
     }
 
-    const eventsWithDist = events.map(event => {
+    const eventsWithDist = events.map((event) => {
       const dist = getDistanceFromLatLonInKm(userLoc.lat, userLoc.lng, event.lat, event.lng);
       return { ...event, distance: dist };
     });
 
-    // Sort by distance
     const sorted = eventsWithDist.sort((a, b) => a.distance - b.distance);
     setNearestEvents(sorted);
   };
@@ -649,71 +869,86 @@ export default function EventsMap() {
             ) : (
               <>
                 <div className="flex gap-5 overflow-x-auto pb-8 horizontal-scroll snap-x snap-mandatory">
-                  {filteredEvents.map((event) => (
-                    <Card
-                      key={event.id}
-                      className="snap-center shrink-0 w-[280px] sm:w-[320px] md:w-[360px] rounded-[32px] overflow-hidden border-none shadow-xl"
-                    >
-                      <div className="h-48 bg-gradient-to-br from-[#4B1D14] via-[#8C3B16] to-[#D97706] relative">
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.35),_transparent_60%)] blur-0" />
-                        <div className="absolute bottom-4 left-5 right-5 text-white">
-                          <p className="text-xs uppercase tracking-widest opacity-80 mb-1">{event.category}</p>
-                          <h3 className="text-2xl font-bold leading-tight drop-shadow-lg">
-                            {getLocalizedEventText(event, 'name')}
-                          </h3>
-                        </div>
-                      </div>
-                      <CardContent className="p-5 space-y-4 bg-white">
-                        <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">
-                          {getLocalizedEventText(event, 'description')}
-                        </p>
-                        <div className="flex flex-wrap items-center gap-2 text-xs">
-                          <Badge className="bg-[#800000]/10 text-[#800000] border-transparent">
-                            {`${t('dayLabel')} ${event.day}`}
-                          </Badge>
-                          <Badge className="bg-[#DAA520]/10 text-[#8B7500] border-transparent">
-                            {getLocalizedAgeGroup(event)}
-                          </Badge>
-                          {(() => {
-                            const statusInfo = statusStyles[event.status] || statusStyles.upcoming;
-                            return (
-                              <Badge className={`border ${statusInfo.className}`}>
-                                {statusInfo.label}
-                              </Badge>
-                            );
-                          })()}
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-gray-500">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {event.time}
-                          </span>
-                          {event.distance && (
-                            <span className="flex items-center gap-1 font-medium text-green-600">
-                              <Navigation className="w-3 h-3" />
-                              {event.distance.toFixed(1)} km
-                            </span>
-                          )}
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full text-[#800000] border-[#800000] hover:bg-[#800000] hover:text-white"
-                          onClick={() => {
-                            if (mapRef.current) {
-                              mapRef.current.flyTo([event.lat, event.lng], 16);
-                            }
-                            handleDirections(event);
-                          }}
-                          disabled={routingStage === 'loading'}
+                  {filteredEvents.map((event) => {
+                    const imageUrl = eventCardImages[event.id] || eventCardImages[String(event.id)];
+                    return (
+                      <Card
+                        key={event.id}
+                        className="snap-center shrink-0 w-[280px] sm:w-[320px] md:w-[360px] rounded-[32px] overflow-hidden border-none shadow-xl flex flex-col"
+                      >
+                        <div
+                          className="h-48 relative"
+                          style={imageUrl ? {
+                            backgroundImage: `url(${imageUrl})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center'
+                          } : undefined}
                         >
-                          {routingStage === 'loading' && activeEvent?.id === event.id
-                            ? t('routeFetching')
-                            : t('directions')}
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ))}
+                          <div className={`absolute inset-0 ${imageUrl ? 'bg-gradient-to-b from-black/10 via-black/30 to-black/70' : 'bg-gradient-to-br from-[#4B1D14] via-[#8C3B16] to-[#D97706]'}`} />
+                          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.35),_transparent_60%)] blur-0" />
+                          <div className="absolute bottom-4 left-5 right-5 text-white">
+                            <p className="text-xs uppercase tracking-widest opacity-80 mb-1">{event.category}</p>
+                            <h3 className="text-2xl font-bold leading-tight drop-shadow-lg">
+                              {getLocalizedEventText(event, 'name')}
+                            </h3>
+                          </div>
+                        </div>
+                        <CardContent className="p-5 bg-white flex flex-col flex-1">
+                          <div className="space-y-4">
+                            <p className="text-sm text-gray-600 leading-relaxed line-clamp-3 min-h-[72px]">
+                              {getLocalizedEventText(event, 'description')}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-2 text-xs">
+                              <Badge className="bg-[#800000]/10 text-[#800000] border-transparent">
+                                {`${t('dayLabel')} ${event.day}`}
+                              </Badge>
+                              <Badge className="bg-[#DAA520]/10 text-[#8B7500] border-transparent">
+                                {getLocalizedAgeGroup(event)}
+                              </Badge>
+                              {(() => {
+                                const statusInfo = statusStyles[event.status] || statusStyles.upcoming;
+                                return (
+                                  <Badge className={`border ${statusInfo.className}`}>
+                                    {statusInfo.label}
+                                  </Badge>
+                                );
+                              })()}
+                            </div>
+                            <div className="flex items-center justify-between text-xs text-gray-500">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {event.time}
+                              </span>
+                              {event.distance && (
+                                <span className="flex items-center gap-1 font-medium text-green-600">
+                                  <Navigation className="w-3 h-3" />
+                                  {event.distance.toFixed(1)} km
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="mt-auto pt-4">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full text-[#800000] border-[#800000] hover:bg-[#800000] hover:text-white"
+                              onClick={() => {
+                                if (mapRef.current) {
+                                  mapRef.current.flyTo([event.lat, event.lng], 16);
+                                }
+                                handleDirections(event);
+                              }}
+                              disabled={routingStage === 'loading'}
+                            >
+                              {routingStage === 'loading' && activeEvent?.id === event.id
+                                ? t('routeFetching')
+                                : t('directions')}
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
                 <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-white via-white/90 to-transparent blur-sm" />
               </>
@@ -721,7 +956,7 @@ export default function EventsMap() {
           </div>
 
           <div
-            className="h-[600px] rounded-xl overflow-hidden shadow-lg border border-gray-200 relative z-0"
+            className="h-[520px] rounded-xl overflow-hidden shadow-lg border border-gray-200 relative z-0"
             ref={mapContainerRef}
           >
             {processionRoutePoints.length > 0 && (
