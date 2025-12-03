@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Navigation, Calendar, Info, RefreshCw, Search, Map as MapIcon, Sparkles } from 'lucide-react';
 import { useLanguage, EVENTS_DATA } from './DasaraContext';
 import { Button, Card, CardContent, Badge } from './ui.jsx';
@@ -220,16 +220,6 @@ export default function EventsMap() {
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
   const eventImageCacheRef = useRef(new Map());
-  const geoWatchIdRef = useRef(null);
-  const liveTrackingInitializedRef = useRef(false);
-
-  const stopLiveTracking = useCallback(() => {
-    if (typeof navigator !== 'undefined' && navigator.geolocation && geoWatchIdRef.current !== null) {
-      navigator.geolocation.clearWatch(geoWatchIdRef.current);
-    }
-    geoWatchIdRef.current = null;
-    liveTrackingInitializedRef.current = false;
-  }, []);
 
   useEffect(() => {
     calculateDistances(EVENTS_DATA, null); // Initial load without user location
@@ -432,60 +422,33 @@ export default function EventsMap() {
     };
   }, [cloudName, eventImageTags]);
 
-  useEffect(() => () => stopLiveTracking(), [stopLiveTracking]);
-
   const handleGetLocation = () => {
-    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const userLoc = { lat: latitude, lng: longitude };
+          setUserLocation(userLoc);
+          setPermissionStatus('granted');
+          calculateDistances(EVENTS_DATA, userLoc);
+          setRoutePath(null);
+          setRouteSummary(null);
+          setRoutingStage('idle');
+          setRoutingError(null);
+          setActiveEvent(null);
+          
+          // Fly to user location
+          if (mapRef.current) {
+            mapRef.current.flyTo([latitude, longitude], 14);
+          }
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          setPermissionStatus('denied');
+        }
+      );
+    } else {
       setPermissionStatus('denied');
-      return;
-    }
-
-    const handlePosition = (position) => {
-      const { latitude, longitude } = position.coords;
-      const userLoc = { lat: latitude, lng: longitude };
-      setUserLocation(userLoc);
-      setPermissionStatus('granted');
-      calculateDistances(EVENTS_DATA, userLoc);
-
-      if (!liveTrackingInitializedRef.current && mapRef.current) {
-        mapRef.current.flyTo([latitude, longitude], 14);
-        liveTrackingInitializedRef.current = true;
-      }
-    };
-
-    const handleError = (error) => {
-      console.error('Error getting location:', error);
-      setPermissionStatus('denied');
-      stopLiveTracking();
-    };
-
-    if (geoWatchIdRef.current !== null) {
-      if (userLocation && mapRef.current) {
-        mapRef.current.flyTo([userLocation.lat, userLocation.lng], 14);
-      }
-      return;
-    }
-
-    setRoutePath(null);
-    setRouteSummary(null);
-    setRoutingStage('idle');
-    setRoutingError(null);
-    setActiveEvent(null);
-    setRouteInstructions([]);
-    liveTrackingInitializedRef.current = false;
-
-    try {
-      const watchId = navigator.geolocation.watchPosition(handlePosition, handleError, {
-        enableHighAccuracy: true,
-        maximumAge: 5000,
-        timeout: 10000,
-      });
-      geoWatchIdRef.current = watchId;
-      setPermissionStatus('prompt');
-    } catch (error) {
-      console.error('Error starting live tracking:', error);
-      setPermissionStatus('denied');
-      stopLiveTracking();
     }
   };
 
