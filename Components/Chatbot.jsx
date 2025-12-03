@@ -44,31 +44,6 @@ export default function Chatbot() {
   }, [language]);
 
   const handleSend = async (e) => {
-    // Inside your handleSend or sendMessage function:
-
-try {
-  const response = await fetch('/api/chat', {  // <--- This points to the Vercel function we just made
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ 
-      message: userMessage,
-      history: [] // You can pass chat history here if you want context
-    }),
-  });
-
-  const data = await response.json();
-  
-  if (data.error) {
-    throw new Error(data.error);
-  }
-
-  // Add the bot's reply to your state
-  setMessages(prev => [...prev, { role: 'bot', text: data.reply }]);
-
-} catch (error) {
-  console.error("Chat Error:", error);
-  setMessages(prev => [...prev, { role: 'bot', text: "Sorry, I'm having trouble connecting to the Dasara servers right now." }]);
-}
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
