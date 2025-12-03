@@ -18,3 +18,54 @@ body {
 html {
   overflow-y: scroll;
 }
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #8000001a transparent;
+  scrollbar-gutter: stable;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #80000066;
+  border-radius: 999px;
+  border: 2px solid transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #80000099;
+}
+
+.horizontal-scroll {
+  scroll-snap-type: x mandatory;
+  scroll-padding: 1rem;
+  scrollbar-width: thin;
+  scrollbar-color: #c2410c66 transparent;
+}
+
+.horizontal-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.horizontal-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 999px;
+}
+
+.horizontal-scroll::-webkit-scrollbar-thumb {
+  background-color: #c2410c80;
+  border-radius: 999px;
+  border: 2px solid transparent;
+}
+
+.horizontal-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #c2410cb3;
+}

@@ -628,11 +628,10 @@ export default function EventsMap() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[600px]">
-          {/* Event List */}
-          <div className="lg:col-span-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar h-full">
-            {filteredEvents.length === 0 && (
-              <div className="h-full flex flex-col items-center justify-center text-gray-400 text-sm border-2 border-dashed rounded-xl p-6">
+        <div className="space-y-8">
+          <div className="relative">
+            {filteredEvents.length === 0 ? (
+              <div className="h-64 flex flex-col items-center justify-center text-gray-400 text-sm border-2 border-dashed rounded-xl p-6">
                 {searchTerm ? (
                   <>
                     <p className="font-medium text-[#800000]">{t('noSearchResults')} “{searchTerm}”.</p>
@@ -647,75 +646,82 @@ export default function EventsMap() {
                   <p className="font-medium text-[#800000]">{t('noEvents')}</p>
                 )}
               </div>
-            )}
-            {filteredEvents.map((event) => (
-              <Card key={event.id} className="hover:shadow-md transition-shadow border-l-4 border-l-[#800000]">
-                <CardContent className="p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-3 mb-2">
-                    <h3 className="font-bold text-lg text-gray-800">
-                      {getLocalizedEventText(event, 'name')}
-                    </h3>
-                    <div className="flex items-center gap-2 text-xs">
-                      <Badge className="border border-[#DAA520] text-[#B8860B] bg-transparent">
-                        {event.category}
-                      </Badge>
-                      {(() => {
-                        const statusInfo = statusStyles[event.status] || statusStyles.upcoming;
-                        return (
-                          <Badge className={`border ${statusInfo.className}`}>
-                            {statusInfo.label}
+            ) : (
+              <>
+                <div className="flex gap-5 overflow-x-auto pb-8 horizontal-scroll snap-x snap-mandatory">
+                  {filteredEvents.map((event) => (
+                    <Card
+                      key={event.id}
+                      className="snap-center shrink-0 w-[280px] sm:w-[320px] md:w-[360px] rounded-[32px] overflow-hidden border-none shadow-xl"
+                    >
+                      <div className="h-48 bg-gradient-to-br from-[#4B1D14] via-[#8C3B16] to-[#D97706] relative">
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.35),_transparent_60%)] blur-0" />
+                        <div className="absolute bottom-4 left-5 right-5 text-white">
+                          <p className="text-xs uppercase tracking-widest opacity-80 mb-1">{event.category}</p>
+                          <h3 className="text-2xl font-bold leading-tight drop-shadow-lg">
+                            {getLocalizedEventText(event, 'name')}
+                          </h3>
+                        </div>
+                      </div>
+                      <CardContent className="p-5 space-y-4 bg-white">
+                        <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">
+                          {getLocalizedEventText(event, 'description')}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2 text-xs">
+                          <Badge className="bg-[#800000]/10 text-[#800000] border-transparent">
+                            {`${t('dayLabel')} ${event.day}`}
                           </Badge>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-3">
-                    {getLocalizedEventText(event, 'description')}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-2 mb-3 text-xs">
-                    <Badge className="bg-[#800000]/10 text-[#800000] border-transparent">
-                      {`${t('dayLabel')} ${event.day}`}
-                    </Badge>
-                    <Badge className="bg-[#DAA520]/10 text-[#8B7500] border-transparent">
-                      {getLocalizedAgeGroup(event)}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      {event.time}
-                    </span>
-                    {event.distance && (
-                      <span className="flex items-center gap-1 font-medium text-green-600">
-                        <Navigation className="w-3 h-3" />
-                        {event.distance.toFixed(1)} km
-                      </span>
-                    )}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full text-[#800000] border-[#800000] hover:bg-[#800000] hover:text-white"
-                    onClick={() => {
-                      if (mapRef.current) {
-                        mapRef.current.flyTo([event.lat, event.lng], 16);
-                      }
-                      handleDirections(event);
-                    }}
-                    disabled={routingStage === 'loading'}
-                  >
-                    {routingStage === 'loading' && activeEvent?.id === event.id
-                      ? t('routeFetching')
-                      : t('directions')}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+                          <Badge className="bg-[#DAA520]/10 text-[#8B7500] border-transparent">
+                            {getLocalizedAgeGroup(event)}
+                          </Badge>
+                          {(() => {
+                            const statusInfo = statusStyles[event.status] || statusStyles.upcoming;
+                            return (
+                              <Badge className={`border ${statusInfo.className}`}>
+                                {statusInfo.label}
+                              </Badge>
+                            );
+                          })()}
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-gray-500">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {event.time}
+                          </span>
+                          {event.distance && (
+                            <span className="flex items-center gap-1 font-medium text-green-600">
+                              <Navigation className="w-3 h-3" />
+                              {event.distance.toFixed(1)} km
+                            </span>
+                          )}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full text-[#800000] border-[#800000] hover:bg-[#800000] hover:text-white"
+                          onClick={() => {
+                            if (mapRef.current) {
+                              mapRef.current.flyTo([event.lat, event.lng], 16);
+                            }
+                            handleDirections(event);
+                          }}
+                          disabled={routingStage === 'loading'}
+                        >
+                          {routingStage === 'loading' && activeEvent?.id === event.id
+                            ? t('routeFetching')
+                            : t('directions')}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+                <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-white via-white/90 to-transparent blur-sm" />
+              </>
+            )}
           </div>
 
-          {/* Map */}
           <div
-            className="lg:col-span-2 h-full rounded-xl overflow-hidden shadow-lg border border-gray-200 relative z-0"
+            className="h-[600px] rounded-xl overflow-hidden shadow-lg border border-gray-200 relative z-0"
             ref={mapContainerRef}
           >
             {processionRoutePoints.length > 0 && (
