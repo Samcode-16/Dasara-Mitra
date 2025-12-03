@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Navigation, Calendar, Info, RefreshCw, Search, Map as MapIcon, Sparkles } from 'lucide-react';
-import { useLanguage, EVENTS_DATA, ROAD_CLOSURES } from './DasaraContext';
+import { useLanguage, EVENTS_DATA } from './DasaraContext';
 import { Button, Card, CardContent, Badge } from './ui.jsx';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 // import 'leaflet/dist/leaflet.css';
 import 'leaflet/dist/leaflet.css'; // Retry import, but relying on CDN fallback below if needed
 import L from 'leaflet';
@@ -18,15 +18,6 @@ L.Icon.Default.mergeOptions({
 // Custom Gold Icon
 const goldIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
-
-const closureIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
   iconSize: [25, 41],
   iconAnchor: [12, 41],
@@ -51,6 +42,29 @@ const finaleIcon = new L.Icon({
   popupAnchor: [1, -40],
   shadowSize: [41, 41]
 });
+
+const PROCESSION_BASELINE_ROUTE = [
+  [12.305163, 76.6551749],
+  [12.30568, 76.65594],
+  [12.30664, 76.6569],
+  [12.30775, 76.65793],
+  [12.30894, 76.65848],
+  [12.31012, 76.65841],
+  [12.31193, 76.65766],
+  [12.31375, 76.65705],
+  [12.31568, 76.65647],
+  [12.31752, 76.65602],
+  [12.31913, 76.65566],
+  [12.32074, 76.65545],
+  [12.32247, 76.65531],
+  [12.32428, 76.6552],
+  [12.32606, 76.65512],
+  [12.32782, 76.65504],
+  [12.32959, 76.655],
+  [12.33147, 76.65499],
+  [12.33328, 76.65499],
+  [12.3340167, 76.6549883]
+];
 
 // Function to get road-following route between waypoints
 const getProcessionRoute = async () => {
@@ -101,14 +115,12 @@ const getProcessionRoute = async () => {
   } catch (error) {
     console.error('Error fetching procession route:', error);
     // Fallback to original path if routing fails
-    const jambbooRouteClosure = ROAD_CLOSURES.find((closure) => closure.id === 'closure-jamboo-route');
-    return (jambbooRouteClosure?.path || []).map((point) => [point.lat, point.lng]);
+    return PROCESSION_BASELINE_ROUTE;
   }
 };
 
 // Initialize with fallback route
-const jambbooRouteClosure = ROAD_CLOSURES.find((closure) => closure.id === 'closure-jamboo-route');
-let PROCESSION_ROUTE_POINTS = (jambbooRouteClosure?.path || []).map((point) => [point.lat, point.lng]);
+let PROCESSION_ROUTE_POINTS = PROCESSION_BASELINE_ROUTE;
 
 const PROCESSION_LANDMARKS = [
   { id: 'mysore-palace', name: 'Mysore Palace', lat: 12.3039, lng: 76.6547, type: 'start' },
@@ -135,8 +147,6 @@ export default function EventsMap() {
   const [selectedDay, setSelectedDay] = useState('all');
   const [selectedAgeGroup, setSelectedAgeGroup] = useState('all');
   const [routeInstructions, setRouteInstructions] = useState([]);
-  const [routeClosures, setRouteClosures] = useState([]);
-  const [showClosures, setShowClosures] = useState(true);
   const [processionCardPinned, setProcessionCardPinned] = useState(true);
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
@@ -259,7 +269,6 @@ export default function EventsMap() {
     setRoutingError(null);
     setActiveEvent(null);
     setRouteInstructions([]);
-    setRouteClosures([]);
   };
 
   const categories = useMemo(() => {
@@ -355,17 +364,6 @@ export default function EventsMap() {
 
   const hasActiveFilters = selectedCategory !== 'all' || selectedDay !== 'all' || selectedAgeGroup !== 'all';
 
-  const closuresToDisplay = useMemo(() => {
-    if (!showClosures) {
-      return [];
-    }
-    if (selectedDay === 'all') {
-      return ROAD_CLOSURES;
-    }
-    const dayValue = Number(selectedDay);
-    return ROAD_CLOSURES.filter((closure) => closure.days.includes(dayValue));
-  }, [showClosures, selectedDay]);
-
   const statusStyles = useMemo(() => ({
     live: {
       label: t('statusLive'),
@@ -407,7 +405,6 @@ export default function EventsMap() {
     setRoutePath(null);
     setRouteSummary(null);
     setRouteInstructions([]);
-    setRouteClosures([]);
 
     try {
       const url = `https://router.project-osrm.org/route/v1/walking/${userLocation.lng},${userLocation.lat};${event.lng},${event.lat}?alternatives=false&overview=full&geometries=geojson&steps=true`;
@@ -445,13 +442,6 @@ export default function EventsMap() {
         setRouteInstructions([]);
       }
 
-      const closuresOnRoute = ROAD_CLOSURES.filter((closure) => {
-        if (!closure.days.includes(event.day)) {
-          return false;
-        }
-        return coordinates.some(([lat, lng]) => isWithinClosure(lat, lng, closure));
-      });
-      setRouteClosures(closuresOnRoute);
       setRoutingStage('success');
 
       if (mapRef.current && coordinates.length) {
@@ -536,27 +526,6 @@ export default function EventsMap() {
       return `${Math.max(5, Math.round(seconds))} ${t('secondsUnitShort')}`;
     }
     return `${Math.round(seconds / 60)} ${t('minutesUnitShort')}`;
-  };
-
-  const isWithinClosure = (lat, lng, closure) => {
-    const radiusMeters = closure.radius || 0;
-    if (radiusMeters > 0) {
-      const distanceKm = getDistanceFromLatLonInKm(lat, lng, closure.lat, closure.lng);
-      if (distanceKm * 1000 <= radiusMeters) {
-        return true;
-      }
-    }
-
-    if (closure.path && closure.path.length) {
-      const bufferMeters = closure.pathBuffer || Math.max(radiusMeters, 120);
-      const bufferKm = bufferMeters / 1000;
-      return closure.path.some((point) => {
-        const pathDistanceKm = getDistanceFromLatLonInKm(lat, lng, point.lat, point.lng);
-        return pathDistanceKm <= bufferKm;
-      });
-    }
-
-    return false;
   };
 
   return (
@@ -749,16 +718,6 @@ export default function EventsMap() {
             className="lg:col-span-2 h-full rounded-xl overflow-hidden shadow-lg border border-gray-200 relative z-0"
             ref={mapContainerRef}
           >
-            <div className="absolute top-4 left-4 z-[1000] flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="bg-white/90 text-[#800000] border-[#DAA520] hover:bg-[#DAA520]/20"
-                onClick={() => setShowClosures((prev) => !prev)}
-              >
-                {showClosures ? t('hideClosures') : t('showClosures')}
-              </Button>
-            </div>
             {processionRoutePoints.length > 0 && (
               <div className="absolute top-4 right-4 z-[1100] flex flex-col items-end gap-2">
                 <Button
@@ -909,40 +868,6 @@ export default function EventsMap() {
                 </>
               )}
 
-              {closuresToDisplay.map((closure) => (
-                <React.Fragment key={closure.id}>
-                  <Circle
-                    center={[closure.lat, closure.lng]}
-                    radius={closure.radius}
-                    pathOptions={{ color: '#DC2626', weight: 2, fillOpacity: 0.1 }}
-                  />
-                  {closure.path && closure.path.length > 1 && closure.id !== 'closure-jamboo-route' && (
-                    <Polyline
-                      positions={closure.path.map((point) => [point.lat, point.lng])}
-                      pathOptions={{ color: '#B91C1C', weight: 4, dashArray: '10 6', opacity: 0.9 }}
-                    />
-                  )}
-                  <Marker position={[closure.lat, closure.lng]} icon={closureIcon}>
-                    <Popup>
-                      <div className="text-sm space-y-1 text-center">
-                        <p className="font-semibold text-[#B91C1C]">
-                          {language === 'kn' ? closure.name_kn : closure.name}
-                        </p>
-                        <p className="text-xs text-gray-600">
-                          {language === 'kn' ? closure.description_kn : closure.description}
-                        </p>
-                        <p className="text-[11px] text-gray-500">
-                          {t('activeOnDays')}: {closure.days.map((day) => `${t('dayLabel')} ${day}`).join(', ')}
-                        </p>
-                        <p className="text-[11px] text-gray-500">
-                          {t('restrictionRadius')}: {closure.radius} {t('metersUnit')}
-                        </p>
-                      </div>
-                    </Popup>
-                  </Marker>
-                </React.Fragment>
-              ))}
-
               {routePath && (
                 <Polyline positions={routePath} pathOptions={{ color: '#DAA520', weight: 6, opacity: 0.85 }} />
               )}
@@ -993,40 +918,6 @@ export default function EventsMap() {
                       </ol>
                     ) : (
                       <p className="mt-2 text-xs text-gray-500">{t('noInstructions')}</p>
-                    )}
-                  </div>
-
-                  <div className="border-t border-[#DAA520]/30 pt-3">
-                    <p className="text-sm font-semibold text-[#800000]">{t('routeRestrictionsTitle')}</p>
-                    {routeClosures.length > 0 ? (
-                      <ul className="mt-2 space-y-2 text-xs text-gray-700">
-                        {routeClosures.map((closure) => (
-                          <li key={closure.id} className="bg-red-50/80 border border-red-200 rounded-md p-2">
-                            <p className="font-semibold text-[#B91C1C]">
-                              {language === 'kn' ? closure.name_kn : closure.name}
-                            </p>
-                            <p className="text-[11px] text-red-700 mt-0.5">
-                              {language === 'kn' ? closure.description_kn : closure.description}
-                            </p>
-                            <p className="text-[11px] text-gray-600 mt-1">
-                              {t('activeOnDays')}: {closure.days.map((day) => `${t('dayLabel')} ${day}`).join(', ')}
-                            </p>
-                            {(() => {
-                              const radiusDisplay = closure.pathBuffer || closure.radius;
-                              if (!radiusDisplay) {
-                                return null;
-                              }
-                              return (
-                                <p className="text-[11px] text-gray-600">
-                                  {t('restrictionRadius')}: {radiusDisplay} {t('metersUnit')}
-                                </p>
-                              );
-                            })()}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="mt-2 text-xs text-gray-500">{t('noRestrictions')}</p>
                     )}
                   </div>
 
