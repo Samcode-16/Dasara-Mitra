@@ -32,17 +32,18 @@ export async function askFestivalAssistant({ userMessage, languageCode = 'en', h
 
   const trimmedHistory = history
     .filter((entry, index) => !(index === 0 && entry.role === 'assistant'))
+    .filter((entry) => typeof entry?.content === 'string' && entry.content.trim().length)
     .slice(-6)
     .map((entry) => ({
       role: entry.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: entry.content }]
+      parts: [{ text: entry.content.trim() }]
     }));
 
   const contents = [
     ...trimmedHistory,
     {
       role: 'user',
-      parts: [{ text: `Language: ${languageHint}\n${userMessage || 'Namaskara'}` }]
+      parts: [{ text: `Language: ${languageHint}\n${userMessage?.trim() || 'Namaskara'}` }]
     }
   ];
 
