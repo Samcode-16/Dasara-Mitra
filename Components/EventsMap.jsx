@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Navigation, Calendar, Info, RefreshCw, Search, Map as MapIcon, Sparkles } from 'lucide-react';
 import { useLanguage, EVENTS_DATA } from './DasaraContext';
 import { Button, Card, CardContent, Badge } from './ui.jsx';
@@ -220,13 +220,6 @@ export default function EventsMap() {
   const eventImageCacheRef = useRef(new Map());
   const eventCardsRef = useRef(null);
   const pendingRouteRef = useRef(null);
-  const [scrollShadows, setScrollShadows] = useState({ atStart: true, atEnd: false });
-
-  const scrollMapIntoView = useCallback(() => {
-    if (mapContainerRef.current) {
-      mapContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, []);
 
   useEffect(() => {
     calculateDistances(EVENTS_DATA, null); // Initial load without user location
@@ -590,41 +583,6 @@ export default function EventsMap() {
     });
   }, [nearestEvents, searchTerm, language, selectedCategory, selectedDay, selectedAgeGroup]);
 
-  useEffect(() => {
-    const scrollEl = eventCardsRef.current;
-    if (!scrollEl) {
-      return undefined;
-    }
-
-    const updateScrollShadows = () => {
-      const { scrollLeft, scrollWidth, clientWidth } = scrollEl;
-      const atStart = scrollLeft <= 2;
-      const atEnd = scrollLeft + clientWidth >= scrollWidth - 2;
-      setScrollShadows((prev) => {
-        if (prev.atStart === atStart && prev.atEnd === atEnd) {
-          return prev;
-        }
-        return { atStart, atEnd };
-      });
-    };
-
-    updateScrollShadows();
-    scrollEl.addEventListener('scroll', updateScrollShadows, { passive: true });
-
-    let resizeObserver;
-    if (typeof ResizeObserver !== 'undefined') {
-      resizeObserver = new ResizeObserver(() => updateScrollShadows());
-      resizeObserver.observe(scrollEl);
-    }
-
-    return () => {
-      scrollEl.removeEventListener('scroll', updateScrollShadows);
-      if (resizeObserver) {
-        resizeObserver.disconnect();
-      }
-    };
-  }, [filteredEvents.length]);
-
   const hasActiveFilters = selectedCategory !== 'all' || selectedDay !== 'all' || selectedAgeGroup !== 'all';
 
   const statusStyles = useMemo(() => ({
@@ -827,7 +785,7 @@ export default function EventsMap() {
               <>
                 <div
                   ref={eventCardsRef}
-                  className="flex gap-5 overflow-x-auto pb-8 horizontal-scroll snap-x snap-mandatory [mask-image:linear-gradient(to_bottom,#000_0%,#000_90%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,#000_0%,#000_90%,transparent_100%)] [mask-size:100%_100%] [mask-repeat:no-repeat]"
+                  className="flex gap-5 overflow-x-auto pb-8 horizontal-scroll snap-x snap-mandatory"
                 >
                   {filteredEvents.map((event) => {
                     const imageUrl = eventCardImages[event.id] || eventCardImages[String(event.id)];
@@ -844,8 +802,7 @@ export default function EventsMap() {
                             backgroundPosition: 'center'
                           } : undefined}
                         >
-                          <div className={`absolute inset-0 ${imageUrl ? 'bg-gradient-to-b from-black/10 via-black/30 to-black/70' : 'bg-gradient-to-br from-[#4B1D14] via-[#8C3B16] to-[#D97706]'}`} />
-                          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.35),_transparent_60%)] blur-0" />
+                          <div className={`absolute inset-0 ${imageUrl ? 'bg-black/10' : 'bg-gradient-to-br from-[#4B1D14] via-[#8C3B16] to-[#D97706]'}`} />
                           <div className="absolute bottom-4 left-5 right-5 text-white">
                             <p className="text-xs uppercase tracking-widest opacity-80 mb-1">{event.category}</p>
                             <h3 className="text-2xl font-bold leading-tight drop-shadow-lg">
@@ -897,7 +854,6 @@ export default function EventsMap() {
                                   mapRef.current.flyTo([event.lat, event.lng], 16);
                                 }
                                 handleDirections(event);
-                                scrollMapIntoView();
                               }}
                               disabled={routingStage === 'loading'}
                             >
@@ -911,9 +867,6 @@ export default function EventsMap() {
                     );
                   })}
                 </div>
-                {!scrollShadows.atEnd && (
-                  <div className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-white via-white/80 to-transparent backdrop-blur-sm transition-opacity duration-300" />
-                )}
               </>
             )}
           </div>
