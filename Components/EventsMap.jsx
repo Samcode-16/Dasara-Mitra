@@ -221,6 +221,7 @@ export default function EventsMap() {
   const mapContainerRef = useRef(null);
   const eventImageCacheRef = useRef(new Map());
   const eventCardsRef = useRef(null);
+  const pendingRouteRef = useRef(null);
   const [scrollShadows, setScrollShadows] = useState({ atStart: true, atEnd: false });
 
   useEffect(() => {
@@ -424,7 +425,7 @@ export default function EventsMap() {
     };
   }, [cloudName, eventImageTags]);
 
-  const handleGetLocation = () => {
+  const handleGetLocation = (onSuccess) => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -443,30 +444,41 @@ export default function EventsMap() {
           if (mapRef.current) {
             mapRef.current.flyTo([latitude, longitude], 14);
           }
+
+          if (typeof onSuccess === 'function') {
+            onSuccess(userLoc);
+          }
         },
         (error) => {
           console.error("Error getting location:", error);
           setPermissionStatus('denied');
+          if (pendingRouteRef.current) {
+            setRoutingStage('error');
+            setRoutingError(t('routeNeedLocation'));
+            pendingRouteRef.current = null;
+          }
         }
       );
     } else {
       setPermissionStatus('denied');
+      if (pendingRouteRef.current) {
+        setRoutingStage('error');
+        setRoutingError(t('routeNeedLocation'));
+        pendingRouteRef.current = null;
+      }
     }
   };
 
   const calculateDistances = (events, userLoc) => {
-    if (!userLoc) {
-      setNearestEvents(events);
-      return;
-    }
-
     const eventsWithDist = events.map((event) => {
+      if (!userLoc) {
+        return { ...event, distance: undefined };
+      }
       const dist = getDistanceFromLatLonInKm(userLoc.lat, userLoc.lng, event.lat, event.lng);
       return { ...event, distance: dist };
     });
 
-    const sorted = eventsWithDist.sort((a, b) => a.distance - b.distance);
-    setNearestEvents(sorted);
+    setNearestEvents(eventsWithDist);
   };
 
   // Haversine formula
@@ -648,11 +660,20 @@ export default function EventsMap() {
     }
   }, [language, routeSummary, activeEvent]);
 
-  const handleDirections = async (event) => {
-    if (!userLocation) {
-      setRoutingError(t('routeNeedLocation'));
-      setRoutingStage('error');
-      handleGetLocation();
+  const handleDirections = async (event, overrideLocation = null) => {
+    const currentLocation = overrideLocation || userLocation;
+    if (!currentLocation) {
+      setRoutingStage('loading');
+      setRoutingError(null);
+      setActiveEvent(event);
+      pendingRouteRef.current = event;
+      handleGetLocation((coords) => {
+        const targetEvent = pendingRouteRef.current;
+        pendingRouteRef.current = null;
+        if (targetEvent) {
+          handleDirections(targetEvent, coords);
+        }
+      });
       return;
     }
 
@@ -664,7 +685,7 @@ export default function EventsMap() {
     setRouteInstructions([]);
 
     try {
-      const url = `https://router.project-osrm.org/route/v1/walking/${userLocation.lng},${userLocation.lat};${event.lng},${event.lat}?alternatives=false&overview=full&geometries=geojson&steps=true`;
+      const url = `https://router.project-osrm.org/route/v1/walking/${currentLocation.lng},${currentLocation.lat};${event.lng},${event.lat}?alternatives=false&overview=full&geometries=geojson&steps=true`;
       const response = await fetch(url);
 
       if (!response.ok) {
