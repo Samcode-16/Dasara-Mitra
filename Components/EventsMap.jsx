@@ -206,7 +206,6 @@ export default function EventsMap() {
   const [permissionStatus, setPermissionStatus] = useState('prompt');
   const [routePath, setRoutePath] = useState(null);
   const [processionRoutePoints, setProcessionRoutePoints] = useState(PROCESSION_ROUTE_POINTS);
-  const [routeSummary, setRouteSummary] = useState(null);
   const [routingStage, setRoutingStage] = useState('idle');
   const [routingError, setRoutingError] = useState(null);
   const [activeEvent, setActiveEvent] = useState(null);
@@ -214,7 +213,6 @@ export default function EventsMap() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedDay, setSelectedDay] = useState('all');
   const [selectedAgeGroup, setSelectedAgeGroup] = useState('all');
-  const [routeInstructions, setRouteInstructions] = useState([]);
   const [processionCardPinned, setProcessionCardPinned] = useState(false);
   const [eventCardImages, setEventCardImages] = useState({});
   const mapRef = useRef(null);
@@ -435,7 +433,6 @@ export default function EventsMap() {
           setPermissionStatus('granted');
           calculateDistances(EVENTS_DATA, userLoc);
           setRoutePath(null);
-          setRouteSummary(null);
           setRoutingStage('idle');
           setRoutingError(null);
           setActiveEvent(null);
@@ -495,15 +492,6 @@ export default function EventsMap() {
     var d = R * c; // Distance in km
     return d;
   }
-
-  const resetRoute = () => {
-    setRoutePath(null);
-    setRouteSummary(null);
-    setRoutingStage('idle');
-    setRoutingError(null);
-    setActiveEvent(null);
-    setRouteInstructions([]);
-  };
 
   const categories = useMemo(() => {
     const unique = Array.from(new Set(EVENTS_DATA.map((event) => event.category).filter(Boolean)));
@@ -648,18 +636,6 @@ export default function EventsMap() {
     }
   }), [t, language]);
 
-  useEffect(() => {
-    if (routeSummary && activeEvent) {
-      const localizedName = getLocalizedEventText(activeEvent, 'name');
-      if (routeSummary.eventName !== localizedName) {
-        setRouteSummary((prev) => ({
-          ...prev,
-          eventName: localizedName,
-        }));
-      }
-    }
-  }, [language, routeSummary, activeEvent]);
-
   const handleDirections = async (event, overrideLocation = null) => {
     const currentLocation = overrideLocation || userLocation;
     if (!currentLocation) {
@@ -681,8 +657,6 @@ export default function EventsMap() {
     setRoutingStage('loading');
     setRoutingError(null);
     setRoutePath(null);
-    setRouteSummary(null);
-    setRouteInstructions([]);
 
     try {
       const url = `https://router.project-osrm.org/route/v1/walking/${currentLocation.lng},${currentLocation.lat};${event.lng},${event.lat}?alternatives=false&overview=full&geometries=geojson&steps=true`;
@@ -702,23 +676,6 @@ export default function EventsMap() {
       const coordinates = route.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
 
       setRoutePath(coordinates);
-      setRouteSummary({
-        eventName: getLocalizedEventText(event, 'name'),
-        distanceKm: route.distance / 1000,
-        durationMin: route.duration / 60,
-      });
-      const leg = route.legs && route.legs[0];
-      if (leg && Array.isArray(leg.steps)) {
-        const instructions = leg.steps.map((step, index) => ({
-          id: `${index}-${step.maneuver?.location?.join(',') || index}`,
-          text: formatInstruction(step),
-          distance: step.distance,
-          duration: step.duration,
-        }));
-        setRouteInstructions(instructions);
-      } else {
-        setRouteInstructions([]);
-      }
 
       setRoutingStage('success');
 
@@ -731,80 +688,12 @@ export default function EventsMap() {
       setRoutingStage('error');
       setRoutingError(t('routeUnavailable'));
       setRoutePath(null);
-      setRouteSummary(null);
     }
   };
 
   function deg2rad(deg) {
     return deg * (Math.PI/180)
   }
-
-  const formatInstruction = (step) => {
-    if (step?.maneuver?.instruction) {
-      return step.maneuver.instruction;
-    }
-
-    const type = step?.maneuver?.type || 'continue';
-    const modifier = step?.maneuver?.modifier || '';
-    const streetName = step?.name || '';
-
-    const typeMap = {
-      depart: 'Start',
-      arrive: 'Arrive at destination',
-      merge: 'Merge',
-      turn: 'Turn',
-      continue: 'Continue',
-      newName: 'Continue',
-      onRamp: 'Take ramp',
-      offRamp: 'Exit',
-      roundabout: 'Enter roundabout',
-      fork: 'Keep',
-      endOfRoad: 'Turn',
-    };
-
-    const modifierMap = {
-      left: 'left',
-      right: 'right',
-      straight: 'straight',
-      'slight left': 'slight left',
-      slight_left: 'slight left',
-      'slight right': 'slight right',
-      slight_right: 'slight right',
-      'sharp left': 'sharp left',
-      sharp_left: 'sharp left',
-      'sharp right': 'sharp right',
-      sharp_right: 'sharp right',
-      uturn: 'a U-turn',
-    };
-
-    const verb = typeMap[type] || 'Continue';
-    const direction = modifier && modifierMap[modifier]
-      ? ` ${modifierMap[modifier]}`
-      : '';
-    const road = streetName ? ` onto ${streetName}` : '';
-
-    return `${verb}${direction}${road}`.trim();
-  };
-
-  const formatStepDistance = (meters) => {
-    if (!meters && meters !== 0) {
-      return '';
-    }
-    if (meters >= 1000) {
-      return `${(meters / 1000).toFixed(1)} ${t('kilometersUnit')}`;
-    }
-    return `${Math.max(1, Math.round(meters))} ${t('metersUnit')}`;
-  };
-
-  const formatStepDuration = (seconds) => {
-    if (!seconds && seconds !== 0) {
-      return '';
-    }
-    if (seconds < 60) {
-      return `${Math.max(5, Math.round(seconds))} ${t('secondsUnitShort')}`;
-    }
-    return `${Math.round(seconds / 60)} ${t('minutesUnitShort')}`;
-  };
 
   return (
     <section id="events" className="py-12 md:py-20 bg-white">
@@ -1101,8 +990,8 @@ export default function EventsMap() {
             <MapContainer
               center={[12.3051, 76.6551]}
               zoom={13}
-              className="!h-full !w-full min-h-[320px]"
-              style={{ height: '100%', width: '100%' }}
+              className="!h-full !w-full min-h-[320px] cursor-grab active:cursor-grabbing"
+              style={{ height: '100%', width: '100%', zIndex: 1 }}
               whenCreated={(mapInstance) => {
                 mapRef.current = mapInstance;
               }}
@@ -1177,66 +1066,23 @@ export default function EventsMap() {
               )}
 
               {routePath && (
-                <Polyline positions={routePath} pathOptions={{ color: '#DAA520', weight: 6, opacity: 0.85 }} />
+                <Polyline positions={routePath} pathOptions={{ color: '#1D4ED8', weight: 6, opacity: 0.9 }} />
               )}
             </MapContainer>
 
             {routingStage === 'loading' && (
-              <div className="absolute left-4 right-4 bottom-4 bg-white/90 backdrop-blur-sm border border-yellow-200 rounded-lg p-4 shadow-lg flex items-center gap-3">
+              <div className="absolute left-4 right-4 bottom-4 z-[1200] bg-white/90 backdrop-blur-sm border border-yellow-200 rounded-lg p-4 shadow-lg flex items-center gap-3">
                 <RefreshCw className="w-5 h-5 text-[#800000] animate-spin" />
                 <p className="text-sm text-[#800000] font-medium">{t('routeFetching')}</p>
               </div>
             )}
 
             {routingStage === 'error' && routingError && (
-              <div className="absolute left-4 right-4 bottom-4 bg-white/95 border border-red-200 text-red-700 rounded-lg p-4 shadow-lg text-sm">
+              <div className="absolute left-4 right-4 bottom-4 z-[1200] bg-white/95 border border-red-200 text-red-700 rounded-lg p-4 shadow-lg text-sm">
                 {routingError}
               </div>
             )}
 
-            {routingStage === 'success' && routeSummary && (
-              <div className="absolute left-4 right-4 bottom-4 bg-white/95 border border-[#DAA520] rounded-lg p-4 shadow-lg max-h-[65%] overflow-y-auto">
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-base font-semibold text-[#800000]">{routeSummary.eventName}</p>
-                      <p className="text-sm text-gray-600">{t('routeReady')}</p>
-                    </div>
-                    <div className="text-sm text-gray-700 text-right">
-                      <p>{t('distance')}: {routeSummary.distanceKm.toFixed(1)} {t('kilometersUnit')}</p>
-                      <p>{t('duration')}: {Math.round(routeSummary.durationMin)} {t('minutesUnitShort')}</p>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-[#DAA520]/30 pt-3">
-                    <p className="text-sm font-semibold text-[#800000]">{t('routeInstructionsTitle')}</p>
-                    {routeInstructions.length > 0 ? (
-                      <ol className="mt-2 space-y-2 max-h-40 overflow-y-auto pr-1">
-                        {routeInstructions.map((step, index) => (
-                          <li key={step.id} className="flex gap-2 text-xs text-gray-700">
-                            <span className="font-semibold text-[#800000]">{index + 1}.</span>
-                            <span className="flex-1">
-                              {step.text}
-                              <span className="block text-[11px] text-gray-500 mt-0.5">
-                                {formatStepDistance(step.distance)} • {formatStepDuration(step.duration)}
-                              </span>
-                            </span>
-                          </li>
-                        ))}
-                      </ol>
-                    ) : (
-                      <p className="mt-2 text-xs text-gray-500">{t('noInstructions')}</p>
-                    )}
-                  </div>
-
-                  <div className="flex justify-end gap-2 pt-1">
-                    <Button variant="ghost" size="sm" onClick={resetRoute}>
-                      {t('clearRoute')}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
