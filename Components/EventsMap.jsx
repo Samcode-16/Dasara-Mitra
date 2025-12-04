@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { Navigation, Calendar, Info, RefreshCw, Search, Map as MapIcon, Sparkles } from 'lucide-react';
 import { useLanguage, EVENTS_DATA } from './DasaraContext';
 import { Button, Card, CardContent, Badge } from './ui.jsx';
@@ -221,6 +221,12 @@ export default function EventsMap() {
   const eventCardsRef = useRef(null);
   const pendingRouteRef = useRef(null);
   const [scrollShadows, setScrollShadows] = useState({ atStart: true, atEnd: false });
+
+  const scrollMapIntoView = useCallback(() => {
+    if (mapContainerRef.current) {
+      mapContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, []);
 
   useEffect(() => {
     calculateDistances(EVENTS_DATA, null); // Initial load without user location
@@ -891,6 +897,7 @@ export default function EventsMap() {
                                   mapRef.current.flyTo([event.lat, event.lng], 16);
                                 }
                                 handleDirections(event);
+                                scrollMapIntoView();
                               }}
                               disabled={routingStage === 'loading'}
                             >
