@@ -220,6 +220,8 @@ export default function EventsMap() {
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
   const eventImageCacheRef = useRef(new Map());
+  const eventCardsRef = useRef(null);
+  const [scrollShadows, setScrollShadows] = useState({ atStart: true, atEnd: false });
 
   useEffect(() => {
     calculateDistances(EVENTS_DATA, null); // Initial load without user location
@@ -582,6 +584,41 @@ export default function EventsMap() {
     });
   }, [nearestEvents, searchTerm, language, selectedCategory, selectedDay, selectedAgeGroup]);
 
+  useEffect(() => {
+    const scrollEl = eventCardsRef.current;
+    if (!scrollEl) {
+      return undefined;
+    }
+
+    const updateScrollShadows = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollEl;
+      const atStart = scrollLeft <= 2;
+      const atEnd = scrollLeft + clientWidth >= scrollWidth - 2;
+      setScrollShadows((prev) => {
+        if (prev.atStart === atStart && prev.atEnd === atEnd) {
+          return prev;
+        }
+        return { atStart, atEnd };
+      });
+    };
+
+    updateScrollShadows();
+    scrollEl.addEventListener('scroll', updateScrollShadows, { passive: true });
+
+    let resizeObserver;
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => updateScrollShadows());
+      resizeObserver.observe(scrollEl);
+    }
+
+    return () => {
+      scrollEl.removeEventListener('scroll', updateScrollShadows);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+    };
+  }, [filteredEvents.length]);
+
   const hasActiveFilters = selectedCategory !== 'all' || selectedDay !== 'all' || selectedAgeGroup !== 'all';
 
   const statusStyles = useMemo(() => ({
@@ -850,6 +887,10 @@ export default function EventsMap() {
 
         <div className="space-y-8">
           <div className="relative">
+            <div className="mb-6">
+              <h2 className="text-2xl font-semibold text-[#800000]">Plan Your Dasara Day</h2>
+              <p className="text-sm text-gray-600">Swipe through the highlighted events and tap “Get Directions” to pin them on the map.</p>
+            </div>
             {filteredEvents.length === 0 ? (
               <div className="h-64 flex flex-col items-center justify-center text-gray-400 text-sm border-2 border-dashed rounded-xl p-6">
                 {searchTerm ? (
@@ -868,7 +909,10 @@ export default function EventsMap() {
               </div>
             ) : (
               <>
-                <div className="flex gap-5 overflow-x-auto pb-8 horizontal-scroll snap-x snap-mandatory">
+                <div
+                  ref={eventCardsRef}
+                  className="flex gap-5 overflow-x-auto pb-8 horizontal-scroll snap-x snap-mandatory [mask-image:linear-gradient(to_bottom,#000_0%,#000_90%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,#000_0%,#000_90%,transparent_100%)] [mask-size:100%_100%] [mask-repeat:no-repeat]"
+                >
                   {filteredEvents.map((event) => {
                     const imageUrl = eventCardImages[event.id] || eventCardImages[String(event.id)];
                     return (
@@ -950,7 +994,9 @@ export default function EventsMap() {
                     );
                   })}
                 </div>
-                <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-white via-white/90 to-transparent blur-sm" />
+                {!scrollShadows.atEnd && (
+                  <div className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-white via-white/80 to-transparent backdrop-blur-sm transition-opacity duration-300" />
+                )}
               </>
             )}
           </div>
