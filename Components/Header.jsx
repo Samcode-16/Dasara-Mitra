@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useLanguage } from './DasaraContext';
-import { Menu, Globe, X } from 'lucide-react';
+import { Menu, Globe, X, Mic } from 'lucide-react';
 import { Button } from './ui.jsx';
 
 export default function Header() {
@@ -53,6 +53,16 @@ export default function Header() {
             <span className="font-bold tracking-wide">{languageLabel}</span>
           </Button>
 
+          <Button
+            variant="ghost"
+            size="sm"
+            className="hidden md:inline-flex items-center gap-2 text-white hover:text-[#DAA520] hover:bg-white/10"
+            onClick={() => window.dispatchEvent(new CustomEvent('voice-assistant-toggle', { detail: { open: true } }))}
+          >
+            <Mic className="w-4 h-4" />
+            <span className="font-semibold text-sm">{t('voiceAssistTitle')}</span>
+          </Button>
+
           {/* Mobile Menu */}
           <div className="md:hidden">
             <Button
@@ -96,6 +106,17 @@ export default function Header() {
                 </NavLink>
               ))}
             </div>
+            <Button
+              variant="outline"
+              className="mt-4 flex items-center gap-2 border-[#800000] text-[#800000]"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                window.dispatchEvent(new CustomEvent('voice-assistant-toggle', { detail: { open: true } }));
+              }}
+            >
+              <Mic className="w-4 h-4" />
+              {t('voiceAssistTitle')}
+            </Button>
           </div>
         </div>
       )}

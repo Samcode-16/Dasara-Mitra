@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Phone, Mail, Clock } from 'lucide-react';
 import Header from './Header.jsx';
@@ -11,6 +11,7 @@ import { useLanguage, LanguageProvider } from './DasaraContext.jsx';
 function LayoutContent({ children }) {
   const { t } = useLanguage();
   const location = useLocation();
+  const voiceAssistantRef = useRef(null);
 
   useEffect(() => {
     if (location.state?.focus === 'event-cards') {
@@ -18,6 +19,18 @@ function LayoutContent({ children }) {
     }
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [location.pathname]);
+
+  useEffect(() => {
+    const handler = (event) => {
+      if (event.detail?.open) {
+        voiceAssistantRef.current?.openPanel?.();
+      } else {
+        voiceAssistantRef.current?.closePanel?.();
+      }
+    };
+    window.addEventListener('voice-assistant-toggle', handler);
+    return () => window.removeEventListener('voice-assistant-toggle', handler);
+  }, []);
 
   const contactDetails = [
     {
@@ -44,7 +57,7 @@ function LayoutContent({ children }) {
       <Header />
       <main className="flex-1">{children}</main>
       <Chatbot />
-      <VoiceAssistant />
+      <VoiceAssistant ref={voiceAssistantRef} />
 
       <footer className="relative mt-12 border-t-4 border-[#800000] bg-gradient-to-br from-[#4C0519] via-[#7F1D1D] to-[#B45309] text-slate-100">
         <div className="absolute inset-0 overflow-hidden">
@@ -67,7 +80,6 @@ function LayoutContent({ children }) {
               </span>
               <p className="text-2xl font-semibold text-[#FDE68A]">{t('title')}</p>
               <p className="text-sm leading-relaxed text-slate-100/75">{t('footerAboutDescription')}</p>
-
               <div className="flex flex-wrap gap-3 text-xs">
                 <span className="inline-flex items-center gap-2 rounded-full border border-[#FACC15]/40 bg-[#4C0519]/50 px-4 py-2 font-semibold uppercase tracking-wide text-[#FACC15]/90">
                   <span className="h-2 w-2 rounded-full bg-[#FACC15]" />
@@ -79,14 +91,6 @@ function LayoutContent({ children }) {
                 </span>
               </div>
 
-              <Link to="/events" className="inline-block">
-                <Button
-                  variant="outline"
-                  className="border-[#FACC15]/70 bg-[#4C0519]/60 text-[#FDE68A] hover:bg-[#FACC15]/20 hover:text-white"
-                >
-                  {t('ctaEvents')}
-                </Button>
-              </Link>
             </div>
 
             <div className="space-y-4">
@@ -124,9 +128,9 @@ function LayoutContent({ children }) {
             </div>
           </div>
 
-          <div className="mt-12 flex flex-col gap-4 border-t border-white/10 pt-6 text-xs text-slate-100/70 sm:flex-row sm:items-center sm:justify-between">
-            <p className="uppercase tracking-[0.25em] text-[#FACC15]/80">{t('footerDisclaimer')}</p>
-            <p className="text-[#FDE68A]">{t('footerText')}</p>
+          <div className="mt-12 border-t border-white/10 pt-6 text-xs text-slate-100/70 space-y-3">
+            <p className="uppercase tracking-[0.25em] text-[#FACC15]/80 text-center">{t('footerDisclaimer')}</p>
+            <p className="text-center text-[#FDE68A] font-semibold">{t('footerText')}</p>
           </div>
         </div>
       </footer>

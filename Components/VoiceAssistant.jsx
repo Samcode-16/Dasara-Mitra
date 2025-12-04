@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Mic, MicOff, Volume2, VolumeX, Sparkles, X, RefreshCw } from 'lucide-react';
 import { useLanguage } from './DasaraContext.jsx';
 import { Button } from './ui.jsx';
@@ -100,9 +100,9 @@ const stripLanguageKeywords = (text = '', languageCode) => {
     .trim();
 };
 
-export default function VoiceAssistant() {
+const VoiceAssistant = forwardRef(function VoiceAssistant({ open = false, onOpenChange }, ref) {
   const { t, language, setLanguage: setAppLanguage } = useLanguage();
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(open);
   const [isListening, setIsListening] = useState(false);
   const [status, setStatus] = useState('idle');
   const [transcript, setTranscript] = useState('');
@@ -238,13 +238,27 @@ export default function VoiceAssistant() {
     recognitionRef.current?.stop();
   };
 
-  const handleTogglePanel = () => {
-    setIsPanelOpen(true);
+  useEffect(() => {
+    setIsPanelOpen(open);
+  }, [open]);
+
+  const openPanel = () => {
+    if (!isPanelOpen) {
+      setIsPanelOpen(true);
+      onOpenChange?.(true);
+    }
     if (isSupported) {
       setTimeout(() => {
         startListening();
       }, 200);
     }
+  };
+
+  const closePanel = () => {
+    setIsPanelOpen(false);
+    onOpenChange?.(false);
+    stopListening();
+    stopSpeaking(setIsSpeaking);
   };
 
   const statusBadge = {
@@ -270,19 +284,15 @@ export default function VoiceAssistant() {
     }
   }[status || 'idle'];
 
+  useImperativeHandle(ref, () => ({
+    openPanel,
+    closePanel
+  }));
+
   return (
     <>
-      <button
-        onClick={handleTogglePanel}
-        className={`fixed top-20 right-6 z-50 flex items-center gap-2 rounded-full border border-[#F97316]/30 bg-white/90 px-4 py-2 text-[#B45309] shadow-lg hover:shadow-xl transition-all duration-200 ${isPanelOpen ? 'hidden' : 'flex'}`}
-        aria-label={t('voiceAssistTapToSpeak')}
-      >
-        <Mic className="w-5 h-5" />
-        <span className="font-semibold text-sm">{t('voiceAssistTitle')}</span>
-      </button>
-
       {isPanelOpen && (
-        <div className="fixed top-[104px] right-6 z-50 w-[90vw] max-w-md rounded-2xl border border-orange-200 bg-white shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300">
+        <div className="fixed top-[104px] right-6 z-[60] w-[90vw] max-w-md rounded-2xl border border-orange-200 bg-white shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300">
           <div className="flex items-start justify-between gap-3 border-b border-orange-100 bg-gradient-to-r from-orange-50 to-white px-4 py-3">
             <div>
               <p className="text-sm font-semibold text-[#B45309] flex items-center gap-1">
@@ -295,11 +305,7 @@ export default function VoiceAssistant() {
               variant="ghost"
               size="sm"
               className="text-gray-600 hover:bg-gray-100"
-              onClick={() => {
-                setIsPanelOpen(false);
-                stopListening();
-                stopSpeaking(setIsSpeaking);
-              }}
+              onClick={closePanel}
             >
               <X className="w-4 h-4" />
             </Button>
@@ -383,4 +389,6 @@ export default function VoiceAssistant() {
       )}
     </>
   );
-}
+});
+
+export default VoiceAssistant;
