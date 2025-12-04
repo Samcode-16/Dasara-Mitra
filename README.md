@@ -58,11 +58,10 @@ It bridges the gap between tradition and technology by offering a fully bilingua
 
 2.  **Install dependencies**
     ```bash
-    
-        > Deploying on Vercel? The repository also ships with `api/assistant.js`, a serverless version of the Gemini proxy. Just set the same environment variables in the Vercel dashboard and the chatbot will call `/api/assistant` automatically.
-
     npm install
     ```
+
+    > Deploying on Vercel? The repo includes `api/assistant.js`, a serverless Gemini proxy. Add the same environment variables in the Vercel dashboard and the frontend will call `/api/assistant` automatically.
 
 3.  **Configure Environment Variables**
     | :---------------------------- | :---------------------------------------------------- |
@@ -117,16 +116,21 @@ The contact form is wired to send emails directly to your inbox. Ensure your Ema
 * `email` : The sender's email address (Set this as the **Reply-To**).
 * `message` : The body of the inquiry.
 
-###  Secure Gemini Proxy
-Keep the Gemini key on the server by running the bundled Express proxy:
+###  Secure Gemini Proxy (Express or Serverless)
 
+#### Option 1 — Express backend (`/server` folder)
 1.  `cd server && cp .env.example .env`
-2.  Add `GEMINI_API_KEY`, adjust `PORT`, `ALLOWED_ORIGINS`, or `GEMINI_MODEL` if needed.
-3.  Install backend deps once with `npm install` inside `server/`.
-4.  Start the proxy via `npm run dev` (or from the project root with `npm run server`).
-5.  Point `VITE_ASSISTANT_API_BASE_URL` in the root `.env` to the proxy URL.
+2.  Fill in `GEMINI_API_KEY`, and adjust `PORT`, `ALLOWED_ORIGINS`, or `GEMINI_MODEL` as needed.
+3.  Run `npm install` inside `server/` once.
+4.  Start the proxy locally with `npm run dev` (or from the project root via `npm run server`).
+5.  Set `VITE_ASSISTANT_API_BASE_URL` in the root `.env` to `http://localhost:4000` (or wherever the proxy is hosted).
 
-The frontend now calls `/api/assistant`, so the Gemini key never ships to the browser. Deploy the proxy to any Node-friendly host for production.
+#### Option 2 — Vercel Serverless function (`/api/assistant.js`)
+1.  Deploy the repo to Vercel; the `api/assistant.js` file becomes a serverless endpoint automatically.
+2.  Configure the same environment variables (`GEMINI_API_KEY`, optional `ALLOWED_ORIGINS`, etc.) in the Vercel Project Settings.
+3.  The frontend simply calls `/api/assistant`, so the Gemini key remains on the serverless backend without exposing it to the client bundle.
+
+Feel free to use both setups: Express for local development/testing and the Vercel function for production.
 
 ---
 
