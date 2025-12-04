@@ -907,7 +907,7 @@ export default function EventsMap() {
         </div>
 
         <div className="space-y-8">
-          <div className="relative">
+          <div className="relative" id="event-cards">
             <div className="mb-6">
               <h2 className="text-2xl font-semibold text-[#800000]">Plan Your Dasara Day</h2>
               <p className="text-sm text-gray-600">Swipe through the highlighted events and tap “Get Directions” to pin them on the map.</p>

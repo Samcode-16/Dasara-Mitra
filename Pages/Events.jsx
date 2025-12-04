@@ -1,9 +1,31 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import EventsMap from '../Components/EventsMap';
 import { useLanguage } from '../Components/DasaraContext';
 
 export default function Events() {
   const { t } = useLanguage();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const focusTarget = location.state?.focus;
+
+  useEffect(() => {
+    if (focusTarget !== 'event-cards') {
+      return undefined;
+    }
+
+    const handleScroll = () => {
+      const el = document.getElementById('event-cards');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      navigate(location.pathname, { replace: true, state: null });
+    };
+
+    const timeout = setTimeout(handleScroll, 120);
+    return () => clearTimeout(timeout);
+  }, [focusTarget, location.pathname, navigate]);
 
   return (
     <div className="pb-12">

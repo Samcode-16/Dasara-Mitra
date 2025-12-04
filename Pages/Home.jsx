@@ -41,7 +41,7 @@ function DasaraApp() {
             <Button
               size="lg"
               className="bg-[#DAA520] hover:bg-[#B8860B] text-white font-bold text-lg px-8 py-6 h-auto shadow-lg shadow-yellow-900/20 transition-all hover:scale-105"
-              onClick={() => navigate('/events')}
+              onClick={() => navigate('/events', { state: { focus: 'event-cards' } })}
             >
               {t('ctaEvents')}
             </Button>

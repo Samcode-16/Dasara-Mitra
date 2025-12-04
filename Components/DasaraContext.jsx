@@ -486,6 +486,7 @@ export const TRANSLATIONS = {
     footerDailyFlowDescription: "Stay ahead of the day-wise highlights and never miss a spectacle.",
     footerSocialTitle: "Follow the celebrations",
     footerSocialInstagram: "Instagram",
+    
     footerSocialYoutube: "YouTube",
     footerSocialFacebook: "Facebook",
     footerSocialX: "X (Twitter)",

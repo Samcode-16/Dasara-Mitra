@@ -1,6 +1,6 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { MapPin, Route, Camera, CalendarDays, Phone, Mail, Clock } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { Phone, Mail, Clock } from 'lucide-react';
 import Header from './Header.jsx';
 import Chatbot from './Chatbot.jsx';
 import VoiceAssistant from './VoiceAssistant.jsx';
@@ -10,6 +10,14 @@ import { useLanguage, LanguageProvider } from './DasaraContext.jsx';
 
 function LayoutContent({ children }) {
   const { t } = useLanguage();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.state?.focus === 'event-cards') {
+      return;
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [location.pathname]);
 
   const contactDetails = [
     {
@@ -31,33 +39,6 @@ function LayoutContent({ children }) {
     }
   ];
 
-  const highlightCards = [
-    {
-      icon: MapPin,
-      title: t('eventsTitle'),
-      description: t('footerEventsCardDescription'),
-      href: '/events'
-    },
-    {
-      icon: Route,
-      title: t('transportTitle'),
-      description: t('footerTransportCardDescription'),
-      href: '/transport'
-    },
-    {
-      icon: Camera,
-      title: t('galleryTitle'),
-      description: t('footerGalleryCardDescription'),
-      href: '/gallery'
-    },
-    {
-      icon: CalendarDays,
-      title: t('footerDailyFlowTitle'),
-      description: t('footerDailyFlowDescription'),
-      href: '/events#events'
-    }
-  ];
-
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 font-sans">
       <Header />
@@ -72,36 +53,7 @@ function LayoutContent({ children }) {
         </div>
 
         <div className="relative container mx-auto px-4 py-14">
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            {highlightCards.map((card) => (
-              <Link
-                key={card.title}
-                to={card.href}
-                className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-5 shadow-lg transition-transform duration-300 hover:-translate-y-1 hover:shadow-2xl"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                <div className="relative flex items-start gap-4">
-                  <span className="rounded-xl border border-[#FACC15]/40 bg-black/20 p-3 text-[#FACC15] shadow-inner shadow-black/30">
-                    <card.icon className="h-5 w-5" />
-                  </span>
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold uppercase tracking-wide text-[#FACC15]/90">
-                      {card.title}
-                    </p>
-                    <p className="text-xs leading-relaxed text-slate-100/80">
-                      {card.description}
-                    </p>
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#FDE68A]">
-                      {t('footerExploreCta')}
-                      <span aria-hidden="true">→</span>
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-
-          <div className="my-10 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+          <div className="mb-10 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
 
           <div className="grid gap-10 lg:grid-cols-[1.6fr,1fr,1fr]">
             <div className="space-y-6">
