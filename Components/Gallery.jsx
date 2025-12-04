@@ -316,20 +316,25 @@ export default function Gallery() {
                 const title = getSectionTitle(section);
                 const blurb = getSectionBlurb(section);
                 return (
-              <div className="flex flex-col gap-2 mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-[#DAA520]/15 flex items-center justify-center text-[#B45309] font-semibold">
-                        {title.charAt(0)}
+                  <div className="mb-6">
+                    <div className="rounded-2xl border border-[#FAD77A] bg-gradient-to-r from-[#FFF9E8] via-white to-white p-5 md:p-6 shadow-sm">
+                      <div className="flex items-start gap-4">
+                        <div className="h-12 w-12 md:h-14 md:w-14 rounded-2xl bg-[#DAA520]/20 flex items-center justify-center text-[#B45309] font-semibold text-lg">
+                          {title.charAt(0)}
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-[#B45309]/70">
+                            <span>{t('gallerySectionLabel') || 'Gallery Focus'}</span>
+                            <span className="flex-1 h-px bg-gradient-to-r from-[#FAD77A] to-transparent"></span>
+                          </div>
+                          <h3 className="text-2xl md:text-3xl font-semibold text-[#3F1F00] leading-snug">{title}</h3>
+                          {blurb && (
+                            <p className="text-base md:text-lg text-gray-700 leading-relaxed">{blurb}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                      <h3 className="text-xl font-semibold text-gray-900">{title}</h3>
-                      {blurb && (
-                        <p className="text-sm text-gray-600">{blurb}</p>
-                      )}
-                  </div>
-                </div>
-                <div className="h-1 w-16 bg-gradient-to-r from-[#DAA520] via-[#FDE68A] to-transparent rounded-full"></div>
-                </div>
                 );
               })()}
 

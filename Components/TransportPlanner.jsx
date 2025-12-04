@@ -37,6 +37,147 @@ const STOP_COORDINATES = {
   'rto': { lat: 12.3034, lng: 76.6608 }
 };
 
+const STOP_NAME_TRANSLATIONS = {
+  'palace bus stop': {
+    en: 'Palace Bus Stop',
+    kn: 'ಪ್ಯಾಲೆಸ್ ಬಸ್ ನಿಲ್ದಾಣ',
+    hi: 'पैलेस बस स्टॉप'
+  },
+  'city bus stand': {
+    en: 'City Bus Stand',
+    kn: 'ನಗರ ಬಸ್ ಸ್ಟ್ಯಾಂಡ್',
+    hi: 'सिटी बस स्टैंड'
+  },
+  'mysore rural bus stand': {
+    en: 'Mysuru Rural Bus Stand',
+    kn: 'ಮೈಸೂರು ಗ್ರಾಮೀಣ ಬಸ್ ಸ್ಟ್ಯಾಂಡ್',
+    hi: 'मैसूरु ग्रामीण बस स्टेशन'
+  },
+  'hardinge circle': {
+    en: 'Hardinge Circle',
+    kn: 'ಹಾರ್ಡಿಂಜ್ ವೃತ್ತ',
+    hi: 'हार्डिंगे सर्कल'
+  },
+  'kr hospital': {
+    en: 'KR Hospital',
+    kn: 'ಕೆ.ಆರ್. ಆಸ್ಪತ್ರೆ',
+    hi: 'केआर अस्पताल'
+  },
+  'railway station': {
+    en: 'Railway Station',
+    kn: 'ರೈಲ್ವೇ ನಿಲ್ದಾಣ',
+    hi: 'रेलवे स्टेशन'
+  },
+  'mysore zoo': {
+    en: 'Mysuru Zoo',
+    kn: 'ಮೈಸೂರು ಮೃಗಾಲಯ',
+    hi: 'मैसूरु चिड़ियाघर'
+  },
+  'chamundipuram': {
+    en: 'Chamundipuram',
+    kn: 'ಚಾಮುಂಡೀಪುರಂ',
+    hi: 'चामुंडीपुरम'
+  },
+  'five light circle': {
+    en: 'Five Light Circle',
+    kn: 'ಐದು ದೀಪ ವೃತ್ತ',
+    hi: 'फाइव लाइट सर्कल'
+  },
+  'nanju malige': {
+    en: 'Nanju Malige',
+    kn: 'ನಂಜು ಮಳಿಗೆ',
+    hi: 'नंजु मलिगे'
+  },
+  'bannimantap depot out gate': {
+    en: 'Bannimantap Depot Out Gate',
+    kn: 'ಬನ್ನಿಮಂಟಪ ಡೆಪೋ ಹೊರ ಗೇಟ್',
+    hi: 'बन्नीमंतप डिपो बाहरी गेट'
+  },
+  'jss lay out': {
+    en: 'JSS Layout',
+    kn: 'ಜೆಎಸ್ಸೆಸ್ ಲೇಔಟ್',
+    hi: 'जेएसएस लेआउट'
+  },
+  'maharani college': {
+    en: 'Maharani College',
+    kn: 'ಮಹಾರಾಣಿ ಕಾಲೇಜು',
+    hi: 'महारानी कॉलेज'
+  },
+  'dasappa circle': {
+    en: 'Dasappa Circle',
+    kn: 'ದಾಸಪ್ಪ ವೃತ್ತ',
+    hi: 'दासप्पा सर्कल'
+  },
+  'akashavani': {
+    en: 'Akashavani',
+    kn: 'ಆಕಾಶವಾಣಿ',
+    hi: 'आकाशवाणी'
+  },
+  'vonti koppal temple': {
+    en: 'Vontikoppal Temple',
+    kn: 'ವಂಟಿಕೊಪ್ಪಲ್ ದೇವಾಲಯ',
+    hi: 'वंटीकोप्पल मंदिर'
+  },
+  'chamundi hill': {
+    en: 'Chamundi Hill',
+    kn: 'ಚಾಮುಂಡಿ ಬೆಟ್ಟ',
+    hi: 'चामुंडी पहाड़ी'
+  },
+  'vani vilas water works': {
+    en: 'Vani Vilas Water Works',
+    kn: 'ವಾಣಿ ವಿಲಾಸ್ ನೀರು ಕಾರ್ಯಾಗಾರ',
+    hi: 'वाणी विलास जल कार्यशाला'
+  },
+  'dodda gadiyara': {
+    en: 'Dodda Gadiyara',
+    kn: 'ದೊಡ್ಡ ಗಡಿಯಾರ',
+    hi: 'डोड्डा गडियारा'
+  },
+  'ramaswamy circle': {
+    en: 'Ramaswamy Circle',
+    kn: 'ರಾಮಸ್ವಾಮಿ ವೃತ್ತ',
+    hi: 'रामस्वामी सर्कल'
+  },
+  'ashoka circle': {
+    en: 'Ashoka Circle',
+    kn: 'ಅಶೋಕ ವೃತ್ತ',
+    hi: 'अशोक सर्कल'
+  },
+  'rto': {
+    en: 'RTO Office',
+    kn: 'ಆರ್‌ಟಿಒ ಕಚೇರಿ',
+    hi: 'आरटीओ कार्यालय'
+  }
+};
+
+const getStopNameVariants = (stop, language) => {
+  const baseName = stop?.name || '';
+  const normalizedKey = stop?.key || normalizeStopName(baseName);
+  const dictionary = STOP_NAME_TRANSLATIONS[normalizedKey];
+  const english = dictionary?.en || baseName;
+
+  if (language === 'kn') {
+    const localized = dictionary?.kn || english;
+    return {
+      primary: localized,
+      secondary: localized === english ? null : english
+    };
+  }
+
+  if (language === 'hi') {
+    const localized = dictionary?.hi || english;
+    return {
+      primary: localized,
+      secondary: localized === english ? null : english
+    };
+  }
+
+  return {
+    primary: english,
+    secondary: null
+  };
+};
+
 const EARTH_RADIUS_KM = 6371;
 
 const toRad = (deg) => (deg * Math.PI) / 180;
@@ -318,7 +459,7 @@ export default function TransportPlanner() {
     const pickupPoint = buildRideCoordinates(selectedFromEvent);
     const dropPoint = buildRideCoordinates(selectedToEvent);
     if (!pickupPoint || !dropPoint) {
-      setOlaError('Select both events to auto-fill Ola.');
+      setOlaError('cabHelperInfoMissing');
       return;
     }
     setOlaError(null);
@@ -334,7 +475,7 @@ export default function TransportPlanner() {
       url.searchParams.set('drop_name', dropPoint.name);
       window.open(url.toString(), '_blank', 'noopener,noreferrer');
     } catch (error) {
-      setOlaError('Unable to open Ola booking right now.');
+      setOlaError('cabHelperOlaUnavailable');
     }
   };
 
@@ -383,10 +524,10 @@ export default function TransportPlanner() {
                   onChange={(event) => setFromId(event.target.value)}
                   className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[#800000] focus:ring-2 focus:ring-[#DAA520]"
                 >
-                  <option value="">Select starting point</option>
+                  <option value="">{t('selectStartingPlaceholder')}</option>
                   {EVENTS_DATA.map((event) => (
                     <option key={event.id} value={event.id.toString()}>
-                      {language === 'kn' ? event.name_kn : event.name}
+                      {getLocalizedEventName(event)}
                     </option>
                   ))}
                 </select>
@@ -399,10 +540,10 @@ export default function TransportPlanner() {
                   onChange={(event) => setToId(event.target.value)}
                   className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[#800000] focus:ring-2 focus:ring-[#DAA520]"
                 >
-                  <option value="">Select destination</option>
+                  <option value="">{t('selectDestinationPlaceholder')}</option>
                   {EVENTS_DATA.map((event) => (
                     <option key={event.id} value={event.id.toString()}>
-                      {language === 'kn' ? event.name_kn : event.name}
+                      {getLocalizedEventName(event)}
                     </option>
                   ))}
                 </select>
@@ -418,8 +559,8 @@ export default function TransportPlanner() {
 
               <div className="rounded-xl border border-gray-200 bg-white/70 p-3 space-y-3">
                 <div className="flex items-center justify-between text-xs text-gray-600">
-                  <span>Need a quick cab?</span>
-                  <span className="text-[11px]">(auto-fills pickup & drop)</span>
+                  <span>{t('cabHelperTitle')}</span>
+                  <span className="text-[11px]">{t('cabHelperHint')}</span>
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -428,7 +569,7 @@ export default function TransportPlanner() {
                     onClick={handleOlaBooking}
                     disabled={!selectedFromEvent || !selectedToEvent}
                   >
-                    Book Ola
+                    {t('cabHelperOla')}
                   </Button>
                   <Button
                     variant="outline"
@@ -436,16 +577,16 @@ export default function TransportPlanner() {
                     onClick={() => handleUberRedirect(uberUrl, uberAppUrl)}
                     disabled={!uberUrl}
                   >
-                    Book Uber
+                    {t('cabHelperUber')}
                   </Button>
                 </div>
                 {olaError ? (
-                  <p className="text-[11px] text-red-600">{olaError}</p>
+                  <p className="text-[11px] text-red-600">{t(olaError)}</p>
                 ) : (
                   <p className="text-[11px] text-gray-500">
                     {selectedFromEvent && selectedToEvent
-                      ? 'Pick-up uses your selected starting event; drop uses the destination event.'
-                      : 'Select both events to enable ride booking links.'}
+                      ? t('cabHelperInfoReady')
+                      : t('cabHelperInfoMissing')}
                   </p>
                 )}
               </div>
@@ -457,7 +598,7 @@ export default function TransportPlanner() {
             {!route && !loading && (
               <div className="h-full flex flex-col items-center justify-center text-gray-400 min-h-[300px] border-2 border-dashed rounded-xl p-8 bg-white/50">
                 <Bus className="w-16 h-16 mb-4 opacity-20" />
-                <p>Select locations to see transport options</p>
+                <p>{t('noRoutePrompt')}</p>
               </div>
             )}
 
@@ -493,6 +634,9 @@ export default function TransportPlanner() {
 
                   {!busLoading && !busError && (
                     <>
+                      <div className="mt-3 rounded-xl border border-yellow-200 bg-white/90 p-3 text-sm text-[#7a4a00]">
+                        {t('busSupportSubtitle')}
+                      </div>
                       <div className="mt-3 grid gap-4 md:grid-cols-2">
                         {[{ event: fromEventDetails, stops: fromStops }, { event: toEventDetails, stops: toStops }].map((segment, idx) => (
                           <div key={idx} className="rounded-xl border border-yellow-100 bg-white/80 p-3">
@@ -507,13 +651,19 @@ export default function TransportPlanner() {
                             {segment.stops && segment.stops.length ? (
                               <ul className="mt-2 space-y-2">
                                 {segment.stops.map((stop) => {
+                                  const stopLabel = getStopNameVariants(stop, language);
                                   const maxToShow = 5;
                                   const busesToShow = stop.buses.slice(0, maxToShow);
                                   const remaining = stop.buses.length - busesToShow.length;
                                   return (
                                     <li key={`${segment.event?.id || idx}-${stop.name}`} className="rounded-lg border border-yellow-100 bg-yellow-50/80 p-3">
                                       <div className="flex items-center justify-between text-sm font-semibold text-gray-900">
-                                        <span>{stop.name}</span>
+                                        <div className="flex flex-col leading-tight">
+                                          <span>{stopLabel.primary}</span>
+                                          {stopLabel.secondary ? (
+                                            <span className="text-[11px] font-normal text-gray-500">{stopLabel.secondary}</span>
+                                          ) : null}
+                                        </div>
                                         {typeof stop.distanceKm === 'number' ? (
                                           <span className="text-xs font-medium text-gray-500">
                                             ≈ {stop.distanceKm.toFixed(1)} {t('kilometersUnit')}
@@ -539,34 +689,47 @@ export default function TransportPlanner() {
                         <div className="mt-4 space-y-3">
                           {directBusMatches.length ? (
                             <div className="rounded-xl border border-green-200 bg-green-50/80 p-3">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-green-800">Direct KSRTC buses</p>
+                              <p className="text-xs font-semibold uppercase tracking-wide text-green-800">{t('directBusHeading')}</p>
                               <ul className="mt-2 space-y-2 text-sm text-green-900">
-                                {directBusMatches.slice(0, 3).map((match, idx) => (
-                                  <li key={`direct-${idx}`} className="rounded-lg bg-white/70 p-3">
-                                    <p className="font-semibold">
-                                      {match.buses.join(', ')}
-                                      {match.total > match.buses.length ? ` +${match.total - match.buses.length}` : ''}
-                                    </p>
-                                    <p className="text-xs text-green-700 mt-1">
-                                      {match.origin.name} → {match.destination.name}
-                                    </p>
-                                  </li>
-                                ))}
+                                {directBusMatches.slice(0, 3).map((match, idx) => {
+                                  const originLabel = getStopNameVariants(match.origin, language);
+                                  const destinationLabel = getStopNameVariants(match.destination, language);
+                                  return (
+                                    <li key={`direct-${idx}`} className="rounded-lg bg-white/70 p-3">
+                                      <p className="font-semibold">
+                                        {match.buses.join(', ')}
+                                        {match.total > match.buses.length ? ` +${match.total - match.buses.length}` : ''}
+                                      </p>
+                                      <div className="mt-1 space-y-0.5">
+                                        <p className="text-xs text-green-700">
+                                          {originLabel.primary} → {destinationLabel.primary}
+                                        </p>
+                                        {language !== 'en' && (originLabel.secondary || destinationLabel.secondary) ? (
+                                          <p className="text-[11px] text-green-700/80">
+                                            {originLabel.secondary || originLabel.primary} → {destinationLabel.secondary || destinationLabel.primary}
+                                          </p>
+                                        ) : null}
+                                      </div>
+                                    </li>
+                                  );
+                                })}
                               </ul>
                             </div>
                           ) : (
                             <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-sm text-amber-900">
-                              <p className="font-semibold text-amber-900">Transfer required</p>
+                              <p className="font-semibold text-amber-900">{t('transferRequiredHeading')}</p>
                               <p className="text-xs text-amber-700 mt-1">
-                                No single KSRTC bus covers both nearest stops.
-                                {primaryFromStop
-                                  ? ` Start from ${primaryFromStop.name} on buses like ${primaryFromStop.buses
-                                      .slice(0, 4)
-                                      .join(', ')} and switch at a central hub (City Bus Stand, KR Circle, or Hardinge Circle).`
-                                  : ' Start from one of the departure stops listed above and change at a central hub.'}
-                                {primaryToStop
-                                  ? ` Then board buses such as ${primaryToStop.buses.slice(0, 4).join(', ')} towards ${primaryToStop.name}.`
-                                  : ' Finally, take one of the destination buses shown above to reach your event.'}
+                                {t('transferLead')} {primaryFromStop
+                                  ? t('transferOriginAdvice', {
+                                      stop: getStopNameVariants(primaryFromStop, language).primary,
+                                      buses: primaryFromStop.buses.slice(0, 4).join(', ')
+                                    })
+                                  : t('transferOriginFallback')} {primaryToStop
+                                  ? t('transferDestinationAdvice', {
+                                      stop: getStopNameVariants(primaryToStop, language).primary,
+                                      buses: primaryToStop.buses.slice(0, 4).join(', ')
+                                    })
+                                  : t('transferDestinationFallback')}
                               </p>
                             </div>
                           )}
@@ -589,9 +752,12 @@ export default function TransportPlanner() {
                       🚶
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-emerald-900">Walk-friendly stretch</p>
+                      <p className="text-sm font-semibold text-emerald-900">{t('walkFriendlyTitle')}</p>
                       <p className="text-xs text-emerald-800">
-                        Distance is only ~{route.distance.toFixed(1)} km — you can walk there in about {walkingTimeMinutes} minutes if sidewalks feel safe.
+                        {t('walkFriendlyDescription', {
+                          distance: route.distance.toFixed(1),
+                          minutes: walkingTimeMinutes
+                        })}
                       </p>
                     </div>
                   </div>

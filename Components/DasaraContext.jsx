@@ -428,6 +428,7 @@ export const TRANSLATIONS = {
     galleryNoImages: "No images have been uploaded for {{section}} yet.",
     gallerySectionPalaceTitle: "Mysuru Palace",
     gallerySectionPalaceBlurb: "Illuminations, rituals, and royal courtside views.",
+    gallerySectionLabel: "Gallery Focus",
     gallerySectionFlowerTitle: "Flower Show",
     gallerySectionFlowerBlurb: "Kuppanna Park floral sculptures and installations.",
     gallerySectionProcessionTitle: "Jumboo Savari Procession",
@@ -546,6 +547,25 @@ export const TRANSLATIONS = {
     busErrorStatus: "Unable to load the city bus network right now.",
     busListLabel: "Buses",
     busNoStops: "No mapped city stops yet.",
+    selectStartingPlaceholder: "Select starting point",
+    selectDestinationPlaceholder: "Select destination",
+    cabHelperTitle: "Need a quick cab?",
+    cabHelperHint: "(auto-fills pickup & drop)",
+    cabHelperOla: "Book Ola",
+    cabHelperUber: "Book Uber",
+    cabHelperInfoReady: "Pick-up uses your selected starting event; drop uses the destination event.",
+    cabHelperInfoMissing: "Select both events to enable ride booking links.",
+    cabHelperOlaUnavailable: "Unable to open Ola booking right now.",
+    noRoutePrompt: "Select locations to see transport options",
+    directBusHeading: "Direct KSRTC buses",
+    transferRequiredHeading: "Transfer required",
+    transferLead: "No single KSRTC bus covers both nearest stops.",
+    transferOriginAdvice: "Start from {{stop}} on buses like {{buses}} and switch at a central hub (City Bus Stand, KR Circle, or Hardinge Circle).",
+    transferOriginFallback: "Start from one of the departure stops listed above and change at a central hub.",
+    transferDestinationAdvice: "Then board buses such as {{buses}} towards {{stop}}.",
+    transferDestinationFallback: "Finally, take one of the destination buses shown above to reach your event.",
+    walkFriendlyTitle: "Walk-friendly stretch",
+    walkFriendlyDescription: "Distance is only ~{{distance}} km — you can walk there in about {{minutes}} minutes if sidewalks feel safe.",
     eventVenueLabel: "Venue",
     searchPlaceholder: "Search events or categories...",
     clearSearch: "Clear",
@@ -603,6 +623,7 @@ export const TRANSLATIONS = {
     galleryNoImages: "{{section}} ಗಾಗಿ ಇನ್ನೂ ಚಿತ್ರಗಳನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಲಾಗಿಲ್ಲ.",
     gallerySectionPalaceTitle: "ಮೈಸೂರು ಅರಮನೆ",
     gallerySectionPalaceBlurb: "ದೀಪಾಲಂಕಾರ, ರಾಜವಿಧಿಗಳು ಮತ್ತು ಅರಮನೆ ದೃಶ್ಯಗಳು.",
+    gallerySectionLabel: "ಚಿತ್ರಮಾಲಿಕೆ",
     gallerySectionFlowerTitle: "ಹೂವಿನ ಪ್ರದರ್ಶನ",
     gallerySectionFlowerBlurb: "ಕುಪ್ಪಣ್ಣ ಪಾರ್ಕ್‌ನ ಹೂ ಶಿಲ್ಪಗಳು ಮತ್ತು ಕಲಾತ್ಮಕ ಸಿದ್ಧತೆ.",
     gallerySectionProcessionTitle: "ಜಂಬೂ ಸವಾರಿ ಮೆರವಣಿಗೆ",
@@ -720,6 +741,25 @@ export const TRANSLATIONS = {
     busErrorStatus: "ಈ ಕ್ಷಣ ಬಸ್ ಜಾಲದ ಮಾಹಿತಿ ಲಭ್ಯವಿಲ್ಲ.",
     busListLabel: "ಬಸ್ಸುಗಳು",
     busNoStops: "ನಿಲ್ದಾಣಗಳ ಮಾಹಿತಿಯನ್ನು ಇನ್ನೂ ಸೇರಿಸಲಾಗಿಲ್ಲ.",
+    selectStartingPlaceholder: "ಆರಂಭಿಕ ಸ್ಥಳ ಆಯ್ಕೆ",
+    selectDestinationPlaceholder: "ಗಮ್ಯ ಸ್ಥಳ ಆಯ್ಕೆ",
+    cabHelperTitle: "ಬೇಗ ಟ್ಯಾಕ್ಸಿ ಬೇಕೇ?",
+    cabHelperHint: "(ಪಿಕಪ್ ಮತ್ತು ಡ್ರಾಪ್ ಸ್ವಯಂಚಾಲಿತವಾಗಿ ತುಂಬುತ್ತದೆ)",
+    cabHelperOla: "ಓಲಾ ಬುಕ್ ಮಾಡಿ",
+    cabHelperUber: "ಉಬರ್ ಬುಕ್ ಮಾಡಿ",
+    cabHelperInfoReady: "ಪಿಕಪ್‌ಗೆ ನೀವು ಆರಿಸಿದ ಆರಂಭಿಕ ಕಾರ್ಯಕ್ರಮ, ಡ್ರಾಪ್‌ಗೆ ಗಮ್ಯ ಕಾರ್ಯಕ್ರಮವನ್ನು ಬಳಸಲಾಗುತ್ತದೆ.",
+    cabHelperInfoMissing: "ರೈಡ್ ಬುಕ್ಕಿಂಗ್ ಲಿಂಕ್‌ಗಳನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಲು ಎರಡೂ ಕಾರ್ಯಕ್ರಮಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ.",
+    cabHelperOlaUnavailable: "ಈ ಕ್ಷಣ ಓಲಾ ಬುಕ್ಕಿಂಗ್ ತೆರೆಯಲಾಗುತ್ತಿಲ್ಲ.",
+    noRoutePrompt: "ಸಾರಿಗೆ ಆಯ್ಕೆಗಳನ್ನು ನೋಡಲು ಸ್ಥಳಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+    directBusHeading: "ನೇರ KSRTC ಬಸ್ಸುಗಳು",
+    transferRequiredHeading: "ಬದಲಿ ಅಗತ್ಯ",
+    transferLead: "ಒಂದೇ KSRTC ಬಸ್ ಎರಡೂ ಹತ್ತಿರದ ನಿಲ್ದಾಣಗಳನ್ನು қамಿಸುವುದಿಲ್ಲ.",
+    transferOriginAdvice: "{{stop}} ನಿಂದ {{buses}} ಬಸ್ಸುಗಳಲ್ಲಿ ಹೊರಟು ಕೇಂದ್ರ ಹಬ್ (City Bus Stand, KR Circle ಅಥವಾ Hardinge Circle) ನಲ್ಲಿ ಬದಲಿ ಮಾಡಿ.",
+    transferOriginFallback: "ಮೇಲಿನ ಹೊರಡುವ ನಿಲ್ದಾಣಗಳಲ್ಲಿ ಯಾವುದರಿಂದಲಾದರೂ ಆರಂಭಿಸಿ ಮತ್ತು ಕೇಂದ್ರ ಹಬ್‌ನಲ್ಲಿ ಬದಲಿ ಮಾಡಿ.",
+    transferDestinationAdvice: "ನಂತರ {{stop}} ಕಡೆಗೆ ಸಾಗುವ {{buses}} ಬಸ್ಸುಗಳಲ್ಲಿ ಹತ್ತಿ.",
+    transferDestinationFallback: "ಕೊನೆಯಲ್ಲಿ ಗಮ್ಯ ಸ್ಥಳದ ಬಸ್ಸುಗಳಲ್ಲಿ ಒಂದನ್ನು ಬಳಸಿ ಕಾರ್ಯಕ್ರಮ ತಲುಪಿರಿ.",
+    walkFriendlyTitle: "ನಡೆದಾಡಲು ಸೂಕ್ತ",
+    walkFriendlyDescription: "ದೂರವು ಸುಮಾರು {{distance}} ಕಿ.ಮೀ — ಪಾದಚಾರಿಯಾಗಿ ಸುಮಾರು {{minutes}} ನಿಮಿಷಗಳಲ್ಲಿ ತಲುಪಬಹುದು, ಪಥಗಳು ಸುರಕ್ಷಿತವಾಗಿದ್ದರೆ.",
     eventVenueLabel: "ಸ್ಥಳ",
     searchPlaceholder: "ಕಾರ್ಯಕ್ರಮಗಳು ಅಥವಾ ವರ್ಗಗಳನ್ನು ಹುಡುಕಿ...",
     clearSearch: "ಅಳಿಸಿ",
@@ -777,6 +817,7 @@ export const TRANSLATIONS = {
     galleryNoImages: "{{section}} के लिए अभी कोई तस्वीर अपलोड नहीं हुई है।",
     gallerySectionPalaceTitle: "मैसूरु महल",
     gallerySectionPalaceBlurb: "रोशनी, रीतियों और राजसी दृश्य की झलक।",
+    gallerySectionLabel: "गैलरी मुख्य आकर्षण",
     gallerySectionFlowerTitle: "फूल प्रदर्शनी",
     gallerySectionFlowerBlurb: "कुप्पन्ना पार्क की पुष्प कलाकृतियाँ और सजावट।",
     gallerySectionProcessionTitle: "जम्बू सवारी जुलूस",
@@ -894,6 +935,25 @@ export const TRANSLATIONS = {
     busErrorStatus: "अभी बस नेटवर्क उपलब्ध नहीं है।",
     busListLabel: "बसें",
     busNoStops: "कोई स्टॉप मैप नहीं किए गए।",
+    selectStartingPlaceholder: "प्रस्थान बिंदु चुनें",
+    selectDestinationPlaceholder: "गंतव्य चुनें",
+    cabHelperTitle: "जल्दी कैब चाहिए?",
+    cabHelperHint: "(पिकअप और ड्रॉप खुद भर जाएगा)",
+    cabHelperOla: "ओला बुक करें",
+    cabHelperUber: "उबर बुक करें",
+    cabHelperInfoReady: "पिकअप के लिए आपका चुना प्रारंभिक कार्यक्रम और ड्रॉप के लिए गंतव्य कार्यक्रम भरा जाएगा।",
+    cabHelperInfoMissing: "राइड लिंक सक्षम करने के लिए दोनों कार्यक्रम चुनें।",
+    cabHelperOlaUnavailable: "अभी ओला बुकिंग नहीं खुल रही है।",
+    noRoutePrompt: "यात्रा विकल्प देखने के लिए स्थान चुनें",
+    directBusHeading: "सीधी KSRTC बसें",
+    transferRequiredHeading: "बदली ज़रूरी",
+    transferLead: "एक भी KSRTC बस दोनों निकटतम स्टॉप को कवर नहीं करती।",
+    transferOriginAdvice: "{{stop}} से {{buses}} बसों में बैठें और किसी केंद्रीय जंक्शन (City Bus Stand, KR Circle या Hardinge Circle) पर बदलें।",
+    transferOriginFallback: "ऊपर सूचीबद्ध प्रस्थान स्टॉप में से किसी एक से शुरुआत करें और केंद्रीय जंक्शन पर बदलें।",
+    transferDestinationAdvice: "फिर {{stop}} की ओर जाने वाली {{buses}} बसों में सवार हों।",
+    transferDestinationFallback: "अंत में सूचीबद्ध गंतव्य बसों में से किसी एक से अपने कार्यक्रम तक पहुँचें।",
+    walkFriendlyTitle: "पैदल भी संभव",
+    walkFriendlyDescription: "दूरी केवल ~{{distance}} किमी है — सुरक्षित फुटपाथ हों तो लगभग {{minutes}} मिनट में पैदल पहुँच सकते हैं।",
     eventVenueLabel: "स्थान",
     searchPlaceholder: "कार्यक्रम या श्रेणी खोजें...",
     clearSearch: "साफ करें",
@@ -945,8 +1005,19 @@ const LanguageContext = createContext();
 export const LanguageProvider = ({ children }) => {
   const [language, setLanguageState] = useState(SUPPORTED_LANGUAGES[0]);
 
-  const t = (key) => {
-    return TRANSLATIONS[language][key] || key;
+  const t = (key, vars) => {
+    const activeDictionary = TRANSLATIONS[language] || {};
+    const fallbackDictionary = TRANSLATIONS.en || {};
+    const template = (activeDictionary[key] ?? fallbackDictionary[key] ?? key);
+
+    if (!vars || typeof template !== 'string') {
+      return template;
+    }
+
+    return Object.entries(vars).reduce((result, [varKey, varValue]) => {
+      const pattern = new RegExp(`{{\\s*${varKey}\\s*}}`, 'g');
+      return result.replace(pattern, String(varValue ?? ''));
+    }, template);
   };
 
   const toggleLanguage = () => {
