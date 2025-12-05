@@ -24,6 +24,48 @@ const originMatchers = allowedOrigins.map((origin) => {
   return { type: 'exact', value: normalizeOrigin(origin) };
 });
 
+const OSRM_BASE_URL = normalizeOrigin(process.env.OSRM_BASE_URL || 'https://router.project-osrm.org');
+const DEFAULT_OSRM_PROFILES = (process.env.OSRM_PROFILES || 'foot,walking,driving')
+  .split(',')
+  .map((entry) => entry.trim())
+  .filter(Boolean);
+
+const buildOsrmQuery = (steps = true) => {
+  const params = new URLSearchParams({
+    alternatives: 'false',
+    overview: 'full',
+    geometries: 'geojson',
+    steps: steps ? 'true' : 'false'
+  });
+  return params.toString();
+};
+
+const fetchOsrmRoute = async ({ coords, steps = true, profiles = DEFAULT_OSRM_PROFILES }) => {
+  const query = buildOsrmQuery(steps);
+  let lastError = null;
+
+  for (const profile of profiles) {
+    try {
+      const upstream = await fetch(`${OSRM_BASE_URL}/route/v1/${profile}/${coords}?${query}`);
+      if (!upstream.ok) {
+        lastError = new Error(`status-${upstream.status}`);
+        continue;
+      }
+
+      const data = await upstream.json();
+      if (data?.routes?.length) {
+        return { profile, route: data.routes[0] };
+      }
+
+      lastError = new Error('no-routes');
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError || new Error('osrm-unavailable');
+};
+
 const corsOptions = {
   origin: (requestOrigin, callback) => {
     if (!originMatchers.length || !requestOrigin) {
@@ -78,6 +120,30 @@ app.post('/api/assistant', async (req, res) => {
   } catch (error) {
     console.error('Assistant proxy error:', error);
     res.status(502).json({ error: 'upstream-error' });
+  }
+});
+
+app.get('/api/osrm-route', async (req, res) => {
+  const coordsParam = typeof req.query.coords === 'string' ? req.query.coords.trim() : null;
+  if (!coordsParam) {
+    return res.status(400).json({ error: 'missing-coords' });
+  }
+
+  const steps = req.query.steps !== 'false';
+  const profileOverride = typeof req.query.profiles === 'string'
+    ? req.query.profiles.split(',').map((entry) => entry.trim()).filter(Boolean)
+    : null;
+
+  try {
+    const result = await fetchOsrmRoute({
+      coords: coordsParam,
+      steps,
+      profiles: profileOverride?.length ? profileOverride : undefined
+    });
+    res.json(result);
+  } catch (error) {
+    console.error('OSRM proxy error:', error);
+    res.status(502).json({ error: 'osrm-unavailable' });
   }
 });
 

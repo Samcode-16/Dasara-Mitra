@@ -132,6 +132,97 @@ const parseEventImageTagConfig = () => {
   };
 };
 
+const OSRM_ROUTE_PROFILES = ['foot', 'walking', 'driving'];
+const rawBackendBaseUrl = (import.meta.env.VITE_ASSISTANT_API_BASE_URL?.trim() || '').replace(/\/$/, '');
+const OSRM_PROXY_ENDPOINTS = Array.from(
+  new Set(
+    [rawBackendBaseUrl ? `${rawBackendBaseUrl}/api/osrm-route` : null, '/api/osrm-route']
+      .filter(Boolean)
+  )
+);
+
+const buildRouteQuery = ({ steps = true } = {}) => {
+  const params = new URLSearchParams({
+    alternatives: 'false',
+    overview: 'full',
+    geometries: 'geojson',
+    steps: steps ? 'true' : 'false'
+  });
+  return params.toString();
+};
+
+const fetchOsrmRouteDirect = async (waypointsStr, options = {}) => {
+  const { steps = true, profiles = OSRM_ROUTE_PROFILES } = options;
+  const query = buildRouteQuery({ steps });
+  let lastError = null;
+
+  for (const profile of profiles) {
+    try {
+      const url = `https://router.project-osrm.org/route/v1/${profile}/${waypointsStr}?${query}`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Routing service unavailable (${profile})`);
+      }
+
+      const data = await response.json();
+      if (!data.routes || !data.routes.length) {
+        throw new Error(`No route found for profile ${profile}`);
+      }
+
+      return {
+        profile,
+        route: data.routes[0]
+      };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError || new Error('Routing failed');
+};
+
+const fetchOsrmRouteViaProxy = async (waypointsStr, options = {}) => {
+  const { steps = true, profiles = OSRM_ROUTE_PROFILES } = options;
+  const params = new URLSearchParams({
+    coords: waypointsStr,
+    steps: steps ? 'true' : 'false',
+    profiles: profiles.join(',')
+  });
+  let lastError = null;
+
+  for (const endpoint of OSRM_PROXY_ENDPOINTS) {
+    try {
+      const response = await fetch(`${endpoint}?${params.toString()}`);
+      if (!response.ok) {
+        lastError = new Error(`Proxy routing failed with status ${response.status}`);
+        continue;
+      }
+
+      const data = await response.json();
+      if (!data?.route?.geometry?.coordinates?.length) {
+        lastError = new Error('Proxy routing returned no path');
+        continue;
+      }
+
+      return data;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError || new Error('Proxy routing failed');
+};
+
+const fetchOsrmRoute = async (waypointsStr, options = {}) => {
+  try {
+    return await fetchOsrmRouteViaProxy(waypointsStr, options);
+  } catch (proxyError) {
+    console.warn('OSRM proxy unavailable, falling back to public endpoint:', proxyError);
+  }
+
+  return fetchOsrmRouteDirect(waypointsStr, options);
+};
+
 // Function to get road-following route between waypoints
 const getProcessionRoute = async () => {
   const palaceStart = {lat: 12.304109, lng: 76.655382};
@@ -156,26 +247,12 @@ const getProcessionRoute = async () => {
   ];
 
   try {
-    // Use OSRM only for road section
     const waypointsStr = roadWaypoints
       .map(point => `${point.lng},${point.lat}`)
       .join(';');
-    
-    const url = `https://router.project-osrm.org/route/v1/walking/${waypointsStr}?overview=full&geometries=geojson&steps=false`;
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      throw new Error('Routing service unavailable');
-    }
 
-    const data = await response.json();
-    
-    if (!data.routes || !data.routes.length) {
-      throw new Error('No route found');
-    }
-
-    // Combine palace straight line + road route
-    const roadCoordinates = data.routes[0].geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+    const { route } = await fetchOsrmRoute(waypointsStr, { steps: false });
+    const roadCoordinates = route.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
     const fullRoute = [...palaceRoute, ...roadCoordinates];
     return fullRoute;
   } catch (error) {
@@ -623,20 +700,8 @@ export default function EventsMap() {
     setRoutePath(null);
 
     try {
-      const url = `https://router.project-osrm.org/route/v1/walking/${currentLocation.lng},${currentLocation.lat};${event.lng},${event.lat}?alternatives=false&overview=full&geometries=geojson&steps=true`;
-      const response = await fetch(url);
-
-      if (!response.ok) {
-        throw new Error('Route service unavailable');
-      }
-
-      const data = await response.json();
-
-      if (!data.routes || !data.routes.length) {
-        throw new Error('No routes found');
-      }
-
-      const route = data.routes[0];
+      const waypointsStr = `${currentLocation.lng},${currentLocation.lat};${event.lng},${event.lat}`;
+      const { route } = await fetchOsrmRoute(waypointsStr, { steps: true });
       const coordinates = route.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
 
       setRoutePath(coordinates);
