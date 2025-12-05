@@ -88,30 +88,6 @@ const FALLBACK_EVENT_CLOUDINARY_TAGS = {
 
 const IMAGE_CACHE_STORAGE_KEY = 'dasara-events-image-cache';
 const IMAGE_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
-const ROUTE_REQUEST_TIMEOUT_MS = 10000;
-const WALKING_SPEED_KMPH = 4.5;
-
-const buildFallbackRoute = (start, end) => {
-  if (!start || !end) {
-    return null;
-  }
-
-  const midLat = start.lat + (end.lat - start.lat) / 2;
-  const midLng = start.lng + (end.lng - start.lng) / 2;
-
-  return [
-    [start.lat, start.lng],
-    [midLat, midLng],
-    [end.lat, end.lng]
-  ];
-};
-
-const estimateWalkingMinutes = (distanceKm) => {
-  if (!Number.isFinite(distanceKm)) {
-    return null;
-  }
-  return Math.max(5, Math.round((distanceKm / WALKING_SPEED_KMPH) * 60));
-};
 
 const stripQuotes = (value = '') => value.replace(/^['"`]+|['"`]+$/g, '');
 
@@ -232,7 +208,6 @@ export default function EventsMap() {
   const [processionRoutePoints, setProcessionRoutePoints] = useState(PROCESSION_ROUTE_POINTS);
   const [routingStage, setRoutingStage] = useState('idle');
   const [routingError, setRoutingError] = useState(null);
-  const [fallbackRouteMeta, setFallbackRouteMeta] = useState(null);
   const [activeEvent, setActiveEvent] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -646,18 +621,10 @@ export default function EventsMap() {
     setRoutingStage('loading');
     setRoutingError(null);
     setRoutePath(null);
-    setFallbackRouteMeta(null);
 
     try {
       const url = `https://router.project-osrm.org/route/v1/walking/${currentLocation.lng},${currentLocation.lat};${event.lng},${event.lat}?alternatives=false&overview=full&geometries=geojson&steps=true`;
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), ROUTE_REQUEST_TIMEOUT_MS);
-      let response;
-      try {
-        response = await fetch(url, { signal: controller.signal });
-      } finally {
-        clearTimeout(timeoutId);
-      }
+      const response = await fetch(url);
 
       if (!response.ok) {
         throw new Error('Route service unavailable');
@@ -665,8 +632,8 @@ export default function EventsMap() {
 
       const data = await response.json();
 
-      if ((data.code && data.code !== 'Ok') || !data.routes || !data.routes.length) {
-        throw new Error(data?.message || 'No routes found');
+      if (!data.routes || !data.routes.length) {
+        throw new Error('No routes found');
       }
 
       const route = data.routes[0];
@@ -675,7 +642,6 @@ export default function EventsMap() {
       setRoutePath(coordinates);
 
       setRoutingStage('success');
-      setFallbackRouteMeta(null);
 
       if (mapRef.current && coordinates.length) {
         const bounds = L.latLngBounds(coordinates);
@@ -683,30 +649,6 @@ export default function EventsMap() {
       }
     } catch (error) {
       console.error('Routing error:', error);
-      const fallbackRoute = buildFallbackRoute(currentLocation, event);
-      if (fallbackRoute) {
-        setRoutePath(fallbackRoute);
-        const approxDistance = getDistanceFromLatLonInKm(
-          currentLocation.lat,
-          currentLocation.lng,
-          event.lat,
-          event.lng
-        );
-        const approxMinutes = estimateWalkingMinutes(approxDistance);
-        setFallbackRouteMeta({
-          distanceKm: approxDistance,
-          minutes: approxMinutes
-        });
-        setRoutingStage('fallback');
-        setRoutingError(null);
-
-        if (mapRef.current && fallbackRoute.length) {
-          const bounds = L.latLngBounds(fallbackRoute);
-          mapRef.current.fitBounds(bounds, { padding: [32, 32] });
-        }
-        return;
-      }
-
       setRoutingStage('error');
       setRoutingError(t('routeUnavailable'));
       setRoutePath(null);
@@ -1092,23 +1034,6 @@ export default function EventsMap() {
               <div className="absolute left-4 right-4 bottom-4 z-[1200] bg-white/90 backdrop-blur-sm border border-yellow-200 rounded-lg p-4 shadow-lg flex items-center gap-3">
                 <RefreshCw className="w-5 h-5 text-[#800000] animate-spin" />
                 <p className="text-sm text-[#800000] font-medium">{t('routeFetching')}</p>
-              </div>
-            )}
-
-            {routingStage === 'fallback' && fallbackRouteMeta && (
-              <div className="absolute left-4 right-4 bottom-4 z-[1200] bg-amber-50/95 border border-amber-200 rounded-lg p-4 shadow-lg flex items-start gap-3">
-                <Sparkles className="w-5 h-5 text-amber-600" />
-                <div>
-                  <p className="text-sm font-semibold text-amber-900">{t('routeFallbackTitle')}</p>
-                  <p className="text-xs text-amber-800 mt-1">
-                    {t('routeFallbackMessage', {
-                      distance: Number.isFinite(fallbackRouteMeta?.distanceKm)
-                        ? fallbackRouteMeta.distanceKm.toFixed(1)
-                        : '—',
-                      minutes: fallbackRouteMeta?.minutes ?? '—'
-                    })}
-                  </p>
-                </div>
               </div>
             )}
 
