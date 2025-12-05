@@ -1,47 +1,10 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { Navigation, Calendar, Info, RefreshCw, Search, Map as MapIcon, Sparkles } from 'lucide-react';
 import { useLanguage, EVENTS_DATA } from './DasaraContext';
 import { Button, Card, CardContent, Badge } from './ui.jsx';
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
-// import 'leaflet/dist/leaflet.css';
-import 'leaflet/dist/leaflet.css'; // Retry import, but relying on CDN fallback below if needed
-import L from 'leaflet';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 
-// Fix for Leaflet icons in React
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
-
-// Custom Gold Icon
-const goldIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
-
-const palaceIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [30, 46],
-  iconAnchor: [15, 46],
-  popupAnchor: [1, -40],
-  shadowSize: [41, 41]
-});
-
-const finaleIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [30, 46],
-  iconAnchor: [15, 46],
-  popupAnchor: [1, -40],
-  shadowSize: [41, 41]
-});
 
 const PROCESSION_BASELINE_ROUTE = [
   [12.305163, 76.6551749],
@@ -132,29 +95,28 @@ const parseEventImageTagConfig = () => {
   };
 };
 
-const OSRM_ROUTE_PROFILES = ['foot', 'walking', 'driving'];
+const browserTomTomKey = (import.meta.env.VITE_TOMTOM_API_KEY || '').trim();
 const rawBackendBaseUrl = (import.meta.env.VITE_ASSISTANT_API_BASE_URL?.trim() || '').replace(/\/$/, '');
-const PRODUCTION_OSRM_ENDPOINT = 'https://dasaramitra.vercel.app/api/osrm-route';
-const OSRM_PROXY_ENDPOINTS = Array.from(
+const PRODUCTION_ROUTING_ENDPOINT = 'https://dasaramitra.vercel.app/api/osrm-route';
+const ROUTING_PROXY_ENDPOINTS = Array.from(
   new Set(
     [
       rawBackendBaseUrl ? `${rawBackendBaseUrl}/api/osrm-route` : null,
       '/api/osrm-route',
-      PRODUCTION_OSRM_ENDPOINT
+      PRODUCTION_ROUTING_ENDPOINT
     ].filter(Boolean)
   )
 );
 
-const fetchOsrmRoute = async (waypointsStr, options = {}) => {
-  const { steps = true, profiles = OSRM_ROUTE_PROFILES } = options;
-  const params = new URLSearchParams({
-    coords: waypointsStr,
-    steps: steps ? 'true' : 'false',
-    profiles: profiles.join(',')
-  });
+const fetchTomTomProxyRoute = async (waypointsStr, options = {}) => {
+  const params = new URLSearchParams({ coords: waypointsStr });
+  if (options.mode) {
+    params.set('mode', options.mode);
+  }
+
   let lastError = null;
 
-  for (const endpoint of OSRM_PROXY_ENDPOINTS) {
+  for (const endpoint of ROUTING_PROXY_ENDPOINTS) {
     try {
       const response = await fetch(`${endpoint}?${params.toString()}`);
       if (!response.ok) {
@@ -163,12 +125,11 @@ const fetchOsrmRoute = async (waypointsStr, options = {}) => {
       }
 
       const data = await response.json();
-      if (!data?.route?.geometry?.coordinates?.length) {
-        lastError = new Error('Proxy routing returned no path');
-        continue;
+      if (Array.isArray(data?.coordinates) && data.coordinates.length) {
+        return data;
       }
 
-      return data;
+      lastError = new Error('Proxy routing returned no path');
     } catch (error) {
       lastError = error;
     }
@@ -205,8 +166,8 @@ const getProcessionRoute = async () => {
       .map(point => `${point.lng},${point.lat}`)
       .join(';');
 
-    const { route } = await fetchOsrmRoute(waypointsStr, { steps: false });
-    const roadCoordinates = route.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+    const { coordinates } = await fetchTomTomProxyRoute(waypointsStr, { mode: 'pedestrian' });
+    const roadCoordinates = coordinates.map(([lng, lat]) => [lat, lng]);
     const fullRoute = [...palaceRoute, ...roadCoordinates];
     return fullRoute;
   } catch (error) {
@@ -228,6 +189,143 @@ const PROCESSION_LANDMARKS = [
   { id: 'bannimantap-grounds', name: 'Bannimantap Grounds', lat: 12.334, lng: 76.655, type: 'end' }
 ];
 
+const buildTomTomRasterStyle = (apiKey) => ({
+  version: 8,
+  sources: {
+    tomtom: {
+      type: 'raster',
+      tiles: [`https://api.tomtom.com/map/1/tile/basic/main/{z}/{x}/{y}.png?key=${apiKey}`],
+      tileSize: 256,
+      attribution: '© TomTom'
+    }
+  },
+  layers: [
+    {
+      id: 'tomtom-basemap',
+      type: 'raster',
+      source: 'tomtom',
+      minzoom: 0,
+      maxzoom: 22
+    }
+  ]
+});
+
+const buildLineCollection = (coordinates = []) => ({
+  type: 'FeatureCollection',
+  features: coordinates.length
+    ? [
+        {
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates
+          },
+          properties: {}
+        }
+      ]
+    : []
+});
+
+const toLngLatPath = (latLngPairs = []) =>
+  latLngPairs
+    .map(([lat, lng]) => [Number(lng), Number(lat)])
+    .filter(([lng, lat]) => Number.isFinite(lng) && Number.isFinite(lat));
+
+const calculateBoundsFromLatLngPairs = (points = []) => {
+  let minLat = Infinity;
+  let minLng = Infinity;
+  let maxLat = -Infinity;
+  let maxLng = -Infinity;
+
+  points.forEach(([lat, lng]) => {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return;
+    }
+    minLat = Math.min(minLat, lat);
+    minLng = Math.min(minLng, lng);
+    maxLat = Math.max(maxLat, lat);
+    maxLng = Math.max(maxLng, lng);
+  });
+
+  if (!Number.isFinite(minLat) || !Number.isFinite(minLng) || !Number.isFinite(maxLat) || !Number.isFinite(maxLng)) {
+    return null;
+  }
+
+  return [
+    [minLng, minLat],
+    [maxLng, maxLat]
+  ];
+};
+
+const calculateBoundsFromLngLatPairs = (points = []) => {
+  let minLat = Infinity;
+  let minLng = Infinity;
+  let maxLat = -Infinity;
+  let maxLng = -Infinity;
+
+  points.forEach(([lng, lat]) => {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return;
+    }
+    minLat = Math.min(minLat, lat);
+    minLng = Math.min(minLng, lng);
+    maxLat = Math.max(maxLat, lat);
+    maxLng = Math.max(maxLng, lng);
+  });
+
+  if (!Number.isFinite(minLat) || !Number.isFinite(minLng) || !Number.isFinite(maxLat) || !Number.isFinite(maxLng)) {
+    return null;
+  }
+
+  return [
+    [minLng, minLat],
+    [maxLng, maxLat]
+  ];
+};
+
+const escapeHtml = (value = '') =>
+  String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+const buildEventPopupContent = ({ event, getLocalizedEventText, getLocalizedAgeGroup, t, statusStyles }) => {
+  if (!event) {
+    return '';
+  }
+  const statusInfo = statusStyles[event.status] || statusStyles.upcoming;
+  return `
+    <div class="text-left space-y-1">
+      <p class="font-semibold text-[#800000]">${escapeHtml(getLocalizedEventText(event, 'name'))}</p>
+      <p class="text-xs text-gray-600">${escapeHtml(event.time || '')}</p>
+      <p class="text-[11px] text-gray-500">${escapeHtml(`${t('dayLabel')} ${event.day}`)} • ${escapeHtml(getLocalizedAgeGroup(event))}</p>
+      <span class="inline-flex items-center rounded-full bg-white/90 px-2 py-1 text-[10px] font-semibold border">${escapeHtml(statusInfo.label)}</span>
+    </div>
+  `;
+};
+
+const fitMapToLatLngPairs = (mapInstance, points, options = {}) => {
+  if (!mapInstance) {
+    return;
+  }
+  const bounds = calculateBoundsFromLatLngPairs(points);
+  if (bounds) {
+    mapInstance.fitBounds(bounds, { padding: 32, ...options });
+  }
+};
+
+const fitMapToLngLatPairs = (mapInstance, points, options = {}) => {
+  if (!mapInstance) {
+    return;
+  }
+  const bounds = calculateBoundsFromLngLatPairs(points);
+  if (bounds) {
+    mapInstance.fitBounds(bounds, { padding: 32, ...options });
+  }
+};
+
 export default function EventsMap() {
   const { t, language } = useLanguage();
   const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
@@ -246,11 +344,17 @@ export default function EventsMap() {
   const [selectedAgeGroup, setSelectedAgeGroup] = useState('all');
   const [processionCardPinned, setProcessionCardPinned] = useState(false);
   const [eventCardImages, setEventCardImages] = useState({});
+  const [mapReady, setMapReady] = useState(false);
+  const [mapInitError, setMapInitError] = useState(null);
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
+  const mapCanvasRef = useRef(null);
   const eventImageCacheRef = useRef(new Map());
   const eventCardsRef = useRef(null);
   const pendingRouteRef = useRef(null);
+  const eventMarkersRef = useRef(new Map());
+  const userMarkerRef = useRef(null);
+  const processionMarkersRef = useRef(new Map());
 
   useEffect(() => {
     calculateDistances(EVENTS_DATA, null); // Initial load without user location
@@ -276,7 +380,7 @@ export default function EventsMap() {
       const width = entry.contentRect.width;
       const map = mapRef.current;
       if (map) {
-        setTimeout(() => map.invalidateSize(), 100);
+        setTimeout(() => map.resize(), 100);
       }
 
       if (!mapContainerRef.current) return;
@@ -453,6 +557,180 @@ export default function EventsMap() {
     };
   }, [cloudName, eventImageTags]);
 
+  useEffect(() => {
+    if (!mapCanvasRef.current) {
+      return undefined;
+    }
+
+    if (!browserTomTomKey) {
+      setMapInitError('missing-key');
+      return undefined;
+    }
+
+    if (mapRef.current) {
+      return undefined;
+    }
+
+    setMapInitError(null);
+    const map = new maplibregl.Map({
+      container: mapCanvasRef.current,
+      style: buildTomTomRasterStyle(browserTomTomKey),
+      center: [76.6551, 12.3051],
+      zoom: 13,
+      attributionControl: false
+    });
+
+    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+    map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
+
+    const handleLoad = () => {
+      if (!map.getSource('procession-route')) {
+        map.addSource('procession-route', { type: 'geojson', data: buildLineCollection() });
+      }
+      if (!map.getLayer('procession-route')) {
+        map.addLayer({
+          id: 'procession-route',
+          type: 'line',
+          source: 'procession-route',
+          paint: {
+            'line-color': '#EA580C',
+            'line-width': 6,
+            'line-opacity': 0.9,
+            'line-dasharray': [1.2, 1.2]
+          }
+        });
+      }
+
+      if (!map.getSource('user-route')) {
+        map.addSource('user-route', { type: 'geojson', data: buildLineCollection() });
+      }
+      if (!map.getLayer('user-route')) {
+        map.addLayer({
+          id: 'user-route',
+          type: 'line',
+          source: 'user-route',
+          paint: {
+            'line-color': '#1D4ED8',
+            'line-width': 4,
+            'line-opacity': 0.95
+          }
+        });
+      }
+
+      setMapReady(true);
+    };
+
+    map.on('load', handleLoad);
+    mapRef.current = map;
+
+    return () => {
+      map.off('load', handleLoad);
+      eventMarkersRef.current.forEach((marker) => marker.remove());
+      eventMarkersRef.current.clear();
+      processionMarkersRef.current.forEach((marker) => marker.remove());
+      processionMarkersRef.current.clear();
+      if (userMarkerRef.current) {
+        userMarkerRef.current.remove();
+        userMarkerRef.current = null;
+      }
+      map.remove();
+      mapRef.current = null;
+      setMapReady(false);
+    };
+  }, [browserTomTomKey]);
+
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) {
+      return;
+    }
+    const map = mapRef.current;
+    const source = map.getSource('procession-route');
+    if (!source) {
+      return;
+    }
+    const coordinates = toLngLatPath(processionRoutePoints);
+    source.setData(buildLineCollection(coordinates));
+  }, [mapReady, processionRoutePoints]);
+
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) {
+      return;
+    }
+    const map = mapRef.current;
+    const source = map.getSource('user-route');
+    if (!source) {
+      return;
+    }
+    const coordinates = Array.isArray(routePath) ? routePath : [];
+    source.setData(buildLineCollection(coordinates));
+  }, [mapReady, routePath]);
+
+
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) {
+      return;
+    }
+
+    const map = mapRef.current;
+    if (!userLocation) {
+      if (userMarkerRef.current) {
+        userMarkerRef.current.remove();
+        userMarkerRef.current = null;
+      }
+      return;
+    }
+
+    if (!userMarkerRef.current) {
+      userMarkerRef.current = new maplibregl.Marker({ color: '#2563EB' })
+        .setPopup(new maplibregl.Popup({ offset: 10 }).setText(t('youAreHere') || 'You are here'));
+    }
+
+    userMarkerRef.current.setLngLat([userLocation.lng, userLocation.lat]).addTo(map);
+  }, [mapReady, userLocation, t]);
+
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) {
+      return;
+    }
+
+    const map = mapRef.current;
+    const markers = processionMarkersRef.current;
+    const trackedIds = new Set();
+
+    PROCESSION_LANDMARKS.filter((landmark) => landmark.type === 'start' || landmark.type === 'end').forEach((landmark) => {
+      trackedIds.add(landmark.id);
+      const popupHtml = `
+        <div class="text-sm text-center space-y-1">
+          <p class="font-semibold text-[#B45309]">${escapeHtml(landmark.name)}</p>
+          <p class="text-[11px] text-gray-600">${escapeHtml(
+            landmark.type === 'start' ? t('processionStartingPoint') : t('processionEndingPoint')
+          )}</p>
+        </div>
+      `;
+
+      let marker = markers.get(landmark.id);
+      if (!marker) {
+        marker = new maplibregl.Marker({ color: landmark.type === 'start' ? '#1D4ED8' : '#7C3AED' })
+          .setLngLat([landmark.lng, landmark.lat])
+          .setPopup(new maplibregl.Popup({ offset: 10 }).setHTML(popupHtml))
+          .addTo(map);
+        markers.set(landmark.id, marker);
+      } else {
+        marker.setLngLat([landmark.lng, landmark.lat]);
+        const popup = marker.getPopup() || new maplibregl.Popup({ offset: 10 });
+        popup.setHTML(popupHtml);
+        marker.setPopup(popup);
+      }
+    });
+
+    markers.forEach((marker, markerId) => {
+      if (!trackedIds.has(markerId)) {
+        marker.remove();
+        markers.delete(markerId);
+      }
+    });
+  }, [mapReady, language, t]);
+
   const handleGetLocation = (onSuccess) => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -469,7 +747,11 @@ export default function EventsMap() {
           
           // Fly to user location
           if (mapRef.current) {
-            mapRef.current.flyTo([latitude, longitude], 14);
+            mapRef.current.flyTo({
+              center: [longitude, latitude],
+              zoom: 14,
+              essential: true
+            });
           }
 
           if (typeof onSuccess === 'function') {
@@ -548,7 +830,7 @@ export default function EventsMap() {
 
   const dayOptions = useMemo(() => Array.from({ length: 10 }, (_, index) => index + 1), []);
 
-  const getLocalizedEventText = (event, key) => {
+  const getLocalizedEventText = useCallback((event, key) => {
     if (!event) {
       return '';
     }
@@ -559,9 +841,9 @@ export default function EventsMap() {
       return event[`${key}_hi`] || event[key] || '';
     }
     return event[key] || '';
-  };
+  }, [language]);
 
-  const getLocalizedAgeGroup = (event) => {
+  const getLocalizedAgeGroup = useCallback((event) => {
     if (!event) {
       return '';
     }
@@ -572,7 +854,7 @@ export default function EventsMap() {
       return event.ageGroup_hi || event.ageGroup || '';
     }
     return event.ageGroup || '';
-  };
+  }, [language]);
 
   const toSearchableText = (value) => (typeof value === 'string' ? value.toLowerCase() : '');
 
@@ -631,6 +913,49 @@ export default function EventsMap() {
     }
   }), [t, language]);
 
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) {
+      return;
+    }
+    const map = mapRef.current;
+    const markers = eventMarkersRef.current;
+    const activeIds = new Set();
+
+    filteredEvents.forEach((event) => {
+      if (!event) return;
+      const markerId = String(event.id);
+      activeIds.add(markerId);
+      const popupContent = buildEventPopupContent({
+        event,
+        getLocalizedEventText,
+        getLocalizedAgeGroup,
+        t,
+        statusStyles
+      });
+
+      let marker = markers.get(markerId);
+      if (!marker) {
+        marker = new maplibregl.Marker({ color: '#B45309' })
+          .setLngLat([event.lng, event.lat])
+          .setPopup(new maplibregl.Popup({ offset: 12 }).setHTML(popupContent))
+          .addTo(map);
+        markers.set(markerId, marker);
+      } else {
+        marker.setLngLat([event.lng, event.lat]);
+        const popup = marker.getPopup() || new maplibregl.Popup({ offset: 12 });
+        popup.setHTML(popupContent);
+        marker.setPopup(popup);
+      }
+    });
+
+    markers.forEach((marker, markerId) => {
+      if (!activeIds.has(markerId)) {
+        marker.remove();
+        markers.delete(markerId);
+      }
+    });
+  }, [filteredEvents, mapReady, getLocalizedEventText, getLocalizedAgeGroup, statusStyles, t]);
+
   const handleDirections = async (event, overrideLocation = null) => {
     const currentLocation = overrideLocation || userLocation;
     if (!currentLocation) {
@@ -655,16 +980,13 @@ export default function EventsMap() {
 
     try {
       const waypointsStr = `${currentLocation.lng},${currentLocation.lat};${event.lng},${event.lat}`;
-      const { route } = await fetchOsrmRoute(waypointsStr, { steps: true });
-      const coordinates = route.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+      const { coordinates } = await fetchTomTomProxyRoute(waypointsStr, { mode: 'pedestrian' });
 
       setRoutePath(coordinates);
-
       setRoutingStage('success');
 
       if (mapRef.current && coordinates.length) {
-        const bounds = L.latLngBounds(coordinates);
-        mapRef.current.fitBounds(bounds, { padding: [32, 32] });
+        fitMapToLngLatPairs(mapRef.current, coordinates, { padding: 48, maxZoom: 16 });
       }
     } catch (error) {
       console.error('Routing error:', error);
@@ -680,7 +1002,6 @@ export default function EventsMap() {
 
   return (
     <section id="events" className="py-12 md:py-20 bg-white">
-      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
       <div className="container mx-auto px-4">
         {!userLocation && permissionStatus !== 'denied' && (
           <div className="max-w-2xl mx-auto mb-6">
@@ -870,7 +1191,11 @@ export default function EventsMap() {
                               className="w-full text-[#800000] border-[#800000] hover:bg-[#800000] hover:text-white"
                               onClick={() => {
                                 if (mapRef.current) {
-                                  mapRef.current.flyTo([event.lat, event.lng], 16);
+                                  mapRef.current.flyTo({
+                                    center: [event.lng, event.lat],
+                                    zoom: 16,
+                                    essential: true
+                                  });
                                 }
                                 handleDirections(event);
                               }}
@@ -935,8 +1260,7 @@ export default function EventsMap() {
                     className="text-[#B45309] border-[#F97316]/70 hover:bg-[#F97316]/15"
                     onClick={() => {
                       if (mapRef.current && processionRoutePoints.length) {
-                        const bounds = L.latLngBounds(processionRoutePoints);
-                        mapRef.current.fitBounds(bounds, { padding: [24, 24], maxZoom: 15 });
+                        fitMapToLatLngPairs(mapRef.current, processionRoutePoints, { padding: 36, maxZoom: 15 });
                       }
                     }}
                   >
@@ -966,88 +1290,23 @@ export default function EventsMap() {
                 </p>
               </div>
             )}
-            <MapContainer
-              center={[12.3051, 76.6551]}
-              zoom={13}
-              className="!h-full !w-full min-h-[320px] cursor-grab active:cursor-grabbing"
-              style={{ height: '100%', width: '100%', zIndex: 1 }}
-              whenCreated={(mapInstance) => {
-                mapRef.current = mapInstance;
-              }}
-            >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              
-              {/* User Location Marker */}
-              {userLocation && (
-                <Marker position={[userLocation.lat, userLocation.lng]}>
-                  <Popup>You are here</Popup>
-                </Marker>
-              )}
+            <div
+              ref={mapCanvasRef}
+              className="absolute inset-0 h-full w-full min-h-[320px] cursor-grab active:cursor-grabbing"
+              role="presentation"
+              aria-label="TomTom map"
+            />
 
-              {/* Event Markers */}
-              {filteredEvents.map((event) => (
-                <Marker 
-                  key={event.id} 
-                  position={[event.lat, event.lng]}
-                  icon={goldIcon}
-                >
-                  <Popup>
-                    <div className="text-center space-y-1">
-                      <h3 className="font-bold text-[#800000]">{getLocalizedEventText(event, 'name')}</h3>
-                      <p className="text-xs text-gray-600">{event.time}</p>
-                      <p className="text-[11px] text-gray-500">
-                        {`${t('dayLabel')} ${event.day}`} • {getLocalizedAgeGroup(event)}
-                      </p>
-                      {(() => {
-                        const statusInfo = statusStyles[event.status] || statusStyles.upcoming;
-                        return (
-                          <span className={`inline-flex items-center justify-center rounded-full px-2 py-1 text-[10px] font-semibold border ${statusInfo.className}`}>
-                            {statusInfo.label}
-                          </span>
-                        );
-                      })()}
-                    </div>
-                  </Popup>
-                </Marker>
-              ))}
-
-              {processionRoutePoints.length > 0 && (
-                <>
-                  <Polyline
-                    positions={processionRoutePoints}
-                    pathOptions={{
-                      color: '#EA580C',
-                      weight: 8,
-                      opacity: 0.9,
-                      dashArray: '12 10',
-                      lineCap: 'round'
-                    }}
-                  />
-                  {PROCESSION_LANDMARKS.filter((landmark) => landmark.type === 'start' || landmark.type === 'end').map((landmark) => {
-                    const icon = landmark.type === 'start' ? palaceIcon : finaleIcon;
-                    return (
-                      <Marker key={landmark.id} position={[landmark.lat, landmark.lng]} icon={icon}>
-                        <Popup>
-                          <div className="text-sm text-center space-y-1">
-                            <p className="font-semibold text-[#B45309]">{landmark.name}</p>
-                            <p className="text-[11px] text-gray-600">
-                              {landmark.type === 'start' ? t('processionStartingPoint') : t('processionEndingPoint')}
-                            </p>
-                          </div>
-                        </Popup>
-                      </Marker>
-                    );
-                  })}
-                </>
-              )}
-
-              {routePath && (
-                <Polyline positions={routePath} pathOptions={{ color: '#1D4ED8', weight: 6, opacity: 0.9 }} />
-              )}
-            </MapContainer>
+            {mapInitError && (
+              <div className="absolute inset-0 z-[1200] flex flex-col items-center justify-center gap-2 bg-white/95 px-6 text-center">
+                <p className="text-sm font-semibold text-[#800000]">
+                  {t('mapKeyMissing') || 'TomTom map key missing'}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {t('mapKeyMissingHint') || 'Set VITE_TOMTOM_API_KEY to load the festival map.'}
+                </p>
+              </div>
+            )}
 
             {routingStage === 'loading' && (
               <div className="absolute left-4 right-4 bottom-4 z-[1200] bg-white/90 backdrop-blur-sm border border-yellow-200 rounded-lg p-4 shadow-lg flex items-center gap-3">

@@ -24,46 +24,66 @@ const originMatchers = allowedOrigins.map((origin) => {
   return { type: 'exact', value: normalizeOrigin(origin) };
 });
 
-const OSRM_BASE_URL = normalizeOrigin(process.env.OSRM_BASE_URL || 'https://router.project-osrm.org');
-const DEFAULT_OSRM_PROFILES = (process.env.OSRM_PROFILES || 'foot,walking,driving')
-  .split(',')
-  .map((entry) => entry.trim())
-  .filter(Boolean);
+const TOMTOM_API_KEY = process.env.TOMTOM_API_KEY;
+const VALID_TRAVEL_MODES = new Set(['pedestrian', 'car', 'bicycle', 'truck', 'bus']);
 
-const buildOsrmQuery = (steps = true) => {
-  const params = new URLSearchParams({
-    alternatives: 'false',
-    overview: 'full',
-    geometries: 'geojson',
-    steps: steps ? 'true' : 'false'
-  });
-  return params.toString();
+const normalizeCoordinates = (coordsParam = '') => {
+  return coordsParam
+    .split(';')
+    .map((pair) => pair.trim())
+    .map((pair) => {
+      const [lng, lat] = pair.split(',').map((value) => Number(value.trim()));
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        return null;
+      }
+      return { lat, lng };
+    })
+    .filter(Boolean);
 };
 
-const fetchOsrmRoute = async ({ coords, steps = true, profiles = DEFAULT_OSRM_PROFILES }) => {
-  const query = buildOsrmQuery(steps);
-  let lastError = null;
-
-  for (const profile of profiles) {
-    try {
-      const upstream = await fetch(`${OSRM_BASE_URL}/route/v1/${profile}/${coords}?${query}`);
-      if (!upstream.ok) {
-        lastError = new Error(`status-${upstream.status}`);
-        continue;
-      }
-
-      const data = await upstream.json();
-      if (data?.routes?.length) {
-        return { profile, route: data.routes[0] };
-      }
-
-      lastError = new Error('no-routes');
-    } catch (error) {
-      lastError = error;
-    }
+const fetchTomTomRoute = async ({ coords, mode = 'pedestrian' }) => {
+  if (!TOMTOM_API_KEY) {
+    throw new Error('missing-tomtom-key');
   }
 
-  throw lastError || new Error('osrm-unavailable');
+  const travelMode = VALID_TRAVEL_MODES.has(mode) ? mode : 'pedestrian';
+  const coordinates = normalizeCoordinates(coords);
+  if (!coordinates.length) {
+    throw new Error('missing-coordinates');
+  }
+
+  const segment = coordinates.map(({ lat, lng }) => `${lat},${lng}`).join(':');
+  const routingUrl = new URL(`https://api.tomtom.com/routing/1/calculateRoute/${segment}/json`);
+  routingUrl.searchParams.set('key', TOMTOM_API_KEY);
+  routingUrl.searchParams.set('travelMode', travelMode);
+  routingUrl.searchParams.set('instructionsType', 'text');
+  routingUrl.searchParams.set('avoid', 'unpavedRoads');
+  routingUrl.searchParams.set('sectionType', travelMode === 'pedestrian' ? 'pedestrian' : 'traffic');
+  routingUrl.searchParams.set('computeTravelTimeFor', 'all');
+
+  const upstream = await fetch(routingUrl.toString());
+  if (!upstream.ok) {
+    throw new Error(`status-${upstream.status}`);
+  }
+
+  const data = await upstream.json();
+  const route = data?.routes?.[0];
+  if (!route) {
+    throw new Error('tomtom-empty');
+  }
+
+  const coordinatesLine = route.legs
+    ?.flatMap((leg) => leg.points || [])
+    .map((point) => [point.longitude, point.latitude]);
+
+  if (!coordinatesLine?.length) {
+    throw new Error('tomtom-no-points');
+  }
+
+  return {
+    coordinates: coordinatesLine,
+    summary: route.summary ?? null
+  };
 };
 
 const corsOptions = {
@@ -129,21 +149,18 @@ app.get('/api/osrm-route', async (req, res) => {
     return res.status(400).json({ error: 'missing-coords' });
   }
 
-  const steps = req.query.steps !== 'false';
-  const profileOverride = typeof req.query.profiles === 'string'
-    ? req.query.profiles.split(',').map((entry) => entry.trim()).filter(Boolean)
-    : null;
+  const mode = typeof req.query.mode === 'string' ? req.query.mode.toLowerCase() : 'pedestrian';
 
   try {
-    const result = await fetchOsrmRoute({
+    const result = await fetchTomTomRoute({
       coords: coordsParam,
-      steps,
-      profiles: profileOverride?.length ? profileOverride : undefined
+      mode
     });
     res.json(result);
   } catch (error) {
-    console.error('OSRM proxy error:', error);
-    res.status(502).json({ error: 'osrm-unavailable' });
+    console.error('TomTom proxy error:', error);
+    const detail = error?.message || 'tomtom-unavailable';
+    res.status(502).json({ error: 'tomtom-unavailable', detail });
   }
 });
 
