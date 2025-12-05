@@ -134,10 +134,14 @@ const parseEventImageTagConfig = () => {
 
 const OSRM_ROUTE_PROFILES = ['foot', 'walking', 'driving'];
 const rawBackendBaseUrl = (import.meta.env.VITE_ASSISTANT_API_BASE_URL?.trim() || '').replace(/\/$/, '');
+const PRODUCTION_OSRM_ENDPOINT = 'https://dasaramitra.vercel.app/api/osrm-route';
 const OSRM_PROXY_ENDPOINTS = Array.from(
   new Set(
-    [rawBackendBaseUrl ? `${rawBackendBaseUrl}/api/osrm-route` : null, '/api/osrm-route']
-      .filter(Boolean)
+    [
+      rawBackendBaseUrl ? `${rawBackendBaseUrl}/api/osrm-route` : null,
+      '/api/osrm-route',
+      PRODUCTION_OSRM_ENDPOINT
+    ].filter(Boolean)
   )
 );
 
