@@ -141,47 +141,7 @@ const OSRM_PROXY_ENDPOINTS = Array.from(
   )
 );
 
-const buildRouteQuery = ({ steps = true } = {}) => {
-  const params = new URLSearchParams({
-    alternatives: 'false',
-    overview: 'full',
-    geometries: 'geojson',
-    steps: steps ? 'true' : 'false'
-  });
-  return params.toString();
-};
-
-const fetchOsrmRouteDirect = async (waypointsStr, options = {}) => {
-  const { steps = true, profiles = OSRM_ROUTE_PROFILES } = options;
-  const query = buildRouteQuery({ steps });
-  let lastError = null;
-
-  for (const profile of profiles) {
-    try {
-      const url = `https://router.project-osrm.org/route/v1/${profile}/${waypointsStr}?${query}`;
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`Routing service unavailable (${profile})`);
-      }
-
-      const data = await response.json();
-      if (!data.routes || !data.routes.length) {
-        throw new Error(`No route found for profile ${profile}`);
-      }
-
-      return {
-        profile,
-        route: data.routes[0]
-      };
-    } catch (error) {
-      lastError = error;
-    }
-  }
-
-  throw lastError || new Error('Routing failed');
-};
-
-const fetchOsrmRouteViaProxy = async (waypointsStr, options = {}) => {
+const fetchOsrmRoute = async (waypointsStr, options = {}) => {
   const { steps = true, profiles = OSRM_ROUTE_PROFILES } = options;
   const params = new URLSearchParams({
     coords: waypointsStr,
@@ -211,16 +171,6 @@ const fetchOsrmRouteViaProxy = async (waypointsStr, options = {}) => {
   }
 
   throw lastError || new Error('Proxy routing failed');
-};
-
-const fetchOsrmRoute = async (waypointsStr, options = {}) => {
-  try {
-    return await fetchOsrmRouteViaProxy(waypointsStr, options);
-  } catch (proxyError) {
-    console.warn('OSRM proxy unavailable, falling back to public endpoint:', proxyError);
-  }
-
-  return fetchOsrmRouteDirect(waypointsStr, options);
 };
 
 // Function to get road-following route between waypoints
