@@ -7,9 +7,15 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
-const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+
+// Support GROQ API as well as OpenAI
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
+const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
+
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-3.5-turbo';
+const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
 
 const normalizeOrigin = (origin = '') => origin.replace(/\/$/, '');
 
@@ -118,28 +124,53 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+
 app.post('/api/assistant', async (req, res) => {
-  if (!GEMINI_API_KEY) {
+  // Prefer GROQ if key is present, else fallback to OpenAI
+  const useGroq = !!GROQ_API_KEY;
+  const apiKey = useGroq ? GROQ_API_KEY : OPENAI_API_KEY;
+  const endpoint = useGroq ? GROQ_ENDPOINT : OPENAI_ENDPOINT;
+  const model = useGroq ? GROQ_MODEL : OPENAI_MODEL;
+
+  if (!apiKey) {
     return res.status(500).json({ error: 'missing-server-key' });
   }
 
   const payload = req.body;
-  if (!payload || !payload.contents) {
+  if (!payload || !payload.messages) {
     return res.status(400).json({ error: 'missing-payload' });
   }
 
   try {
-    const upstream = await fetch(`${GEMINI_ENDPOINT}?key=${GEMINI_API_KEY}`, {
+    const upstream = await fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model,
+        messages: payload.messages
+      })
     });
 
-    const data = await upstream.json();
+    let data;
+    try {
+      data = await upstream.json();
+    } catch (jsonError) {
+      console.error('API response not JSON:', await upstream.text());
+      return res.status(502).json({ error: 'upstream-error', detail: 'Invalid JSON from API' });
+    }
+
+    if (!upstream.ok) {
+      console.error('API error:', data);
+      return res.status(upstream.status).json({ error: 'upstream-error', detail: data });
+    }
+
     res.status(upstream.status).json(data);
   } catch (error) {
     console.error('Assistant proxy error:', error);
-    res.status(502).json({ error: 'upstream-error' });
+    res.status(502).json({ error: 'upstream-error', detail: error?.message || error });
   }
 });
 

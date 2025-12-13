@@ -30,20 +30,29 @@ const buildSystemInstruction = (languageCode = 'en') => {
 export async function askFestivalAssistant({ userMessage, languageCode = 'en', history = [] }) {
   const languageHint = LANGUAGE_HINTS[languageCode] || LANGUAGE_HINTS.en;
 
-  const trimmedHistory = history
+
+  // Convert history to OpenAI format
+  const openaiHistory = history
     .filter((entry, index) => !(index === 0 && entry.role === 'assistant'))
     .filter((entry) => typeof entry?.content === 'string' && entry.content.trim().length)
     .slice(-6)
     .map((entry) => ({
-      role: entry.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: entry.content.trim() }]
+      role: entry.role === 'assistant' ? 'assistant' : 'user',
+      content: entry.content.trim()
     }));
 
-  const contents = [
-    ...trimmedHistory,
+  // System prompt for OpenAI
+  const systemPrompt = {
+    role: 'system',
+    content: `You are "Dasara Mitra", a warm cultural guide for Mysuru Dasara.\n\nLANGUAGE RULES:\n- The user's preferred language is ${languageHint}\n- Always respond strictly in ${languageHint}\n- Kannada → native script (ಕನ್ನಡ)\n- Hindi → native script (देवनागरी)\n- Begin every reply with "${NAMASKARA_PREFIX[languageCode] || NAMASKARA_PREFIX.en}"\n- Keep answers factual, festival focused, and under 100 words.\n`
+  };
+
+  const messages = [
+    systemPrompt,
+    ...openaiHistory,
     {
       role: 'user',
-      parts: [{ text: `Language: ${languageHint}\n${userMessage?.trim() || 'Namaskara'}` }]
+      content: `Language: ${languageHint}\n${userMessage?.trim() || 'Namaskara'}`
     }
   ];
 
@@ -52,15 +61,7 @@ export async function askFestivalAssistant({ userMessage, languageCode = 'en', h
     response = await fetch(assistantEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents,
-        system_instruction: buildSystemInstruction(languageCode),
-        generation_config: {
-          temperature: languageCode === 'kn' ? 0.7 : languageCode === 'hi' ? 0.65 : 0.6,
-          top_p: 0.95,
-          top_k: 40
-        }
-      })
+      body: JSON.stringify({ messages })
     });
   } catch (networkError) {
     console.error('Assistant proxy unreachable:', networkError);
@@ -74,19 +75,9 @@ export async function askFestivalAssistant({ userMessage, languageCode = 'en', h
   }
 
   const data = await response.json();
-  if (data?.promptFeedback?.blockReason) {
-    throw new Error(`blocked:${data.promptFeedback.blockReason}`);
-  }
 
-  const candidate = data?.candidates?.[0];
-  if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
-    throw new Error(`blocked:${candidate.finishReason}`);
-  }
-
-  const reply = candidate?.content?.parts
-    ?.map((part) => part.text?.trim())
-    .filter(Boolean)
-    .join('\n');
+  // OpenAI returns choices[0].message.content
+  const reply = data?.choices?.[0]?.message?.content?.trim();
 
   if (!reply) {
     throw new Error('empty-response');

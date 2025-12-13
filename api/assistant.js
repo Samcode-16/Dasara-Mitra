@@ -69,26 +69,33 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-  if (!GEMINI_API_KEY) {
+
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+  if (!OPENAI_API_KEY) {
     respond(res, 500, { error: 'missing-server-key' }, origin);
     return;
   }
 
-  const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+  const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-3.5-turbo';
+  const endpoint = `https://api.openai.com/v1/chat/completions`;
 
   const payload = req.body;
-  if (!payload || !payload.contents) {
+  if (!payload || !payload.messages) {
     respond(res, 400, { error: 'missing-payload' }, origin);
     return;
   }
 
   try {
-    const upstream = await fetch(`${endpoint}?key=${GEMINI_API_KEY}`, {
+    const upstream = await fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        messages: payload.messages
+      })
     });
 
     const data = await upstream.json();
