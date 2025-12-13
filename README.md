@@ -63,16 +63,19 @@ It bridges the gap between tradition and technology by offering a fully bilingua
 
     > Deploying on Vercel? The repo includes `api/assistant.js`, a serverless Groq proxy. Add the same environment variables in the Vercel dashboard and the frontend will call `/api/assistant` automatically.
 
+
 3.  **Configure Environment Variables**
-    | :---------------------------- | :---------------------------------------------------- |
-    | `GROQ_API_KEY`         | Your Groq API Key for the chatbot.        |
-    | `VITE_CLOUDINARY_CLOUD_NAME`  | Your Cloudinary Cloud Name.                           |
-    | `VITE_CLOUDINARY_GALLERY_TAGS` | Comma-separated Cloudinary tags (e.g., `mysuru_palace,...`). |
-    | `VITE_EVENT_CLOUDINARY_TAGS` | JSON map of event IDs to Cloudinary tags/public IDs (e.g., `{ "1": "dasara_jamboo_savari" }`). |
-    | `VITE_EMAILJS_SERVICE_ID`     | EmailJS Service ID.                                   |
-    | `VITE_EMAILJS_TEMPLATE_ID`    | EmailJS Template ID.                                  |
-    | `VITE_EMAILJS_PUBLIC_KEY`     | EmailJS Public Key.                                   |
-    | `VITE_ASSISTANT_API_BASE_URL` | URL of the backend proxy (default `http://localhost:4000`). |
+
+    | Variable                       | Description                                                                                 |
+    |-------------------------------|---------------------------------------------------------------------------------------------|
+    | `GROQ_API_KEY`                | Your Groq API Key for the chatbot.                                                          |
+    | `VITE_CLOUDINARY_CLOUD_NAME`  | Your Cloudinary Cloud Name.                                                                 |
+    | `VITE_CLOUDINARY_GALLERY_TAGS`| Comma-separated Cloudinary tags (e.g., `mysuru_palace,...`).                                |
+    | `VITE_EVENT_CLOUDINARY_TAGS`  | JSON map of event IDs to Cloudinary tags/public IDs (e.g., `{ "1": "dasara_jamboo_savari" }`). |
+    | `VITE_EMAILJS_SERVICE_ID`     | EmailJS Service ID.                                                                         |
+    | `VITE_EMAILJS_TEMPLATE_ID`    | EmailJS Template ID.                                                                        |
+    | `VITE_EMAILJS_PUBLIC_KEY`     | EmailJS Public Key.                                                                         |
+    | `VITE_ASSISTANT_API_BASE_URL` | URL of the backend proxy (default `http://localhost:4000`).                                 |
 
 4.  **Run the development servers**
     ```bash
