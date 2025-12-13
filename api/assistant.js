@@ -70,14 +70,27 @@ module.exports = async (req, res) => {
   }
 
 
+
+  // Support GROQ API as well as OpenAI
+  const GROQ_API_KEY = process.env.GROQ_API_KEY;
+  const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
+  const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
+
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-  if (!OPENAI_API_KEY) {
+  const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-3.5-turbo';
+  const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
+
+  // Prefer GROQ if key is present, else fallback to OpenAI
+  const useGroq = !!GROQ_API_KEY;
+  const apiKey = useGroq ? GROQ_API_KEY : OPENAI_API_KEY;
+  const endpoint = useGroq ? GROQ_ENDPOINT : OPENAI_ENDPOINT;
+  const model = useGroq ? GROQ_MODEL : OPENAI_MODEL;
+
+  if (!apiKey) {
     respond(res, 500, { error: 'missing-server-key' }, origin);
     return;
   }
 
-  const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-3.5-turbo';
-  const endpoint = `https://api.openai.com/v1/chat/completions`;
 
   const payload = req.body;
   if (!payload || !payload.messages) {
@@ -90,10 +103,10 @@ module.exports = async (req, res) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: OPENAI_MODEL,
+        model,
         messages: payload.messages
       })
     });
