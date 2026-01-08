@@ -766,6 +766,11 @@ export default function EventsMap() {
             setRoutingError(t('routeNeedLocation'));
             pendingRouteRef.current = null;
           }
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
         }
       );
     } else {
