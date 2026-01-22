@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useLanguage } from './DasaraContext';
-import { Menu, Globe, X, Mic } from 'lucide-react';
+import { Menu, Globe, X, Mic, Compass } from 'lucide-react';
 import { Button } from './ui.jsx';
 
 export default function Header() {
@@ -13,6 +13,7 @@ export default function Header() {
     { label: t('events'), path: '/events' },
     { label: t('transport'), path: '/transport' },
     { label: t('gallery'), path: '/gallery' },
+    { label: t('findMyWay'), path: '/find-my-way', icon: Compass, emergency: true },
   ];
 
   return (
@@ -25,17 +26,24 @@ export default function Header() {
         </div>
 
         {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-8">
+        <nav className="hidden md:flex items-center gap-6">
           {navItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
               className={({ isActive }) =>
-                `text-base font-semibold tracking-wide transition-colors ${
-                  isActive ? 'text-[#DAA520]' : 'text-white hover:text-[#DAA520]'
-                }`
+                item.emergency
+                  ? `inline-flex items-center gap-1.5 text-sm font-bold tracking-wide px-3 py-1.5 rounded-full transition-all ${
+                      isActive
+                        ? 'bg-green-500 text-white shadow-lg'
+                        : 'bg-green-600/90 text-white hover:bg-green-500 hover:scale-105'
+                    }`
+                  : `text-base font-semibold tracking-wide transition-colors ${
+                      isActive ? 'text-[#DAA520]' : 'text-white hover:text-[#DAA520]'
+                    }`
               }
             >
+              {item.icon && <item.icon className="w-4 h-4" />}
               {item.label}
             </NavLink>
           ))}
@@ -107,11 +115,18 @@ export default function Header() {
                   to={item.path}
                   onClick={() => setMobileMenuOpen(false)}
                   className={({ isActive }) =>
-                    `text-left text-base font-medium rounded-md px-3 py-2 ${
-                      isActive ? 'bg-[#800000]/10 text-[#800000]' : 'hover:bg-gray-100'
-                    }`
+                    item.emergency
+                      ? `flex items-center gap-2 text-base font-bold rounded-lg px-3 py-3 ${
+                          isActive
+                            ? 'bg-green-500 text-white'
+                            : 'bg-green-600 text-white hover:bg-green-500'
+                        }`
+                      : `text-left text-base font-medium rounded-md px-3 py-2 ${
+                          isActive ? 'bg-[#800000]/10 text-[#800000]' : 'hover:bg-gray-100'
+                        }`
                   }
                 >
+                  {item.icon && <item.icon className="w-5 h-5" />}
                   {item.label}
                 </NavLink>
               ))}
