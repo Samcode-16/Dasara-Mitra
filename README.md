@@ -12,7 +12,7 @@
 
 **The Ultimate Bilingual Companion for Mysuru Dasara 2025**
 
-[View Live Demo](#) · [Report Bug](#) · [Request Feature](#)
+[View Live Demo](https://dasaramitra.vercel.app) · [Report Bug](#) · [Request Feature](#)
 
 </div>
 
