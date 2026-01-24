@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Home, Navigation, MapPin, AlertTriangle, Check, Loader2, X, Compass, Shield, Clock, Route, Volume2, VolumeX, ChevronRight, ArrowUp, ArrowLeft, ArrowRight, CornerUpLeft, CornerUpRight, RefreshCw, Play, Pause } from 'lucide-react';
+import { Home, Navigation, MapPin, AlertTriangle, Check, Loader2, X, Compass, Shield, Clock, Route, Volume2, VolumeX, ChevronRight, ArrowUp, ArrowLeft, ArrowRight, CornerUpLeft, CornerUpRight, RefreshCw, Play, Pause, History, Trash2, Eye, EyeOff, WifiOff, Radio } from 'lucide-react';
 import { useLanguage } from './DasaraContext';
 import { Button, Card, CardContent, Badge } from './ui.jsx';
 import maplibregl from 'maplibre-gl';
@@ -69,6 +69,9 @@ const PRESET_LOCATIONS = [
 ];
 
 const HOME_BASE_STORAGE_KEY = 'dasara-mitra-home-base';
+const TRAIL_STORAGE_KEY = 'dasara-mitra-trail-history';
+const TRAIL_SAVE_INTERVAL = 60000; // Save every 60 seconds
+const MIN_DISTANCE_FOR_TRAIL = 5; // Minimum 5 meters to add new point
 
 // Maneuver to icon mapping
 const MANEUVER_ICONS = {
@@ -347,6 +350,39 @@ const formatDistance = (meters) => {
   return `${(meters / 1000).toFixed(1)} km`;
 };
 
+// Trail point structure: { lat, lng, timestamp, accuracy }
+// Load trail from localStorage
+const loadTrailFromStorage = () => {
+  try {
+    const saved = localStorage.getItem(TRAIL_STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (err) {
+    console.warn('Failed to load trail history:', err);
+  }
+  return [];
+};
+
+// Save trail to localStorage
+const saveTrailToStorage = (trail) => {
+  try {
+    localStorage.setItem(TRAIL_STORAGE_KEY, JSON.stringify(trail));
+  } catch (err) {
+    console.warn('Failed to save trail history:', err);
+  }
+};
+
+// Clear trail from localStorage
+const clearTrailFromStorage = () => {
+  try {
+    localStorage.removeItem(TRAIL_STORAGE_KEY);
+  } catch (err) {
+    console.warn('Failed to clear trail history:', err);
+  }
+};
+
 export default function FindMyWay() {
   const { t, language } = useLanguage();
   
@@ -369,6 +405,13 @@ export default function FindMyWay() {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [lastSpokenInstruction, setLastSpokenInstruction] = useState(null);
   
+  // Trail tracking state (offline support)
+  const [trailHistory, setTrailHistory] = useState([]);
+  const [isTrackingTrail, setIsTrackingTrail] = useState(false);
+  const [showTrailCanvas, setShowTrailCanvas] = useState(false);
+  const [mapLoadFailed, setMapLoadFailed] = useState(false);
+  const [showBacktrackMode, setShowBacktrackMode] = useState(false);
+  
   // Map refs
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -376,8 +419,14 @@ export default function FindMyWay() {
   const homeMarkerRef = useRef(null);
   const watchIdRef = useRef(null);
   const instructionsRef = useRef([]);
+  
+  // Trail tracking refs
+  const canvasRef = useRef(null);
+  const trailWatchIdRef = useRef(null);
+  const trailSaveIntervalRef = useRef(null);
+  const lastTrailPointRef = useRef(null);
 
-  // Load saved home base from localStorage
+  // Load saved home base and trail from localStorage
   useEffect(() => {
     try {
       const saved = localStorage.getItem(HOME_BASE_STORAGE_KEY);
@@ -390,6 +439,13 @@ export default function FindMyWay() {
       }
     } catch (err) {
       console.warn('Failed to load saved home base:', err);
+    }
+    
+    // Load saved trail history
+    const savedTrail = loadTrailFromStorage();
+    if (savedTrail.length > 0) {
+      setTrailHistory(savedTrail);
+      lastTrailPointRef.current = savedTrail[savedTrail.length - 1];
     }
   }, []);
 
@@ -469,9 +525,238 @@ export default function FindMyWay() {
       if (watchIdRef.current) {
         navigator.geolocation.clearWatch(watchIdRef.current);
       }
+      if (trailWatchIdRef.current) {
+        navigator.geolocation.clearWatch(trailWatchIdRef.current);
+      }
+      if (trailSaveIntervalRef.current) {
+        clearInterval(trailSaveIntervalRef.current);
+      }
       window.speechSynthesis?.cancel();
     };
   }, [fetchUserLocation]);
+  
+  // Trail tracking: Add point to trail if moved enough distance
+  const addTrailPoint = useCallback((lat, lng, accuracy) => {
+    const newPoint = { lat, lng, accuracy, timestamp: Date.now() };
+    
+    // Check if we've moved enough from last point
+    if (lastTrailPointRef.current) {
+      const dist = calculateDistance(
+        lastTrailPointRef.current.lat,
+        lastTrailPointRef.current.lng,
+        lat,
+        lng
+      ) * 1000; // Convert to meters
+      
+      if (dist < MIN_DISTANCE_FOR_TRAIL) {
+        return; // Haven't moved enough
+      }
+    }
+    
+    lastTrailPointRef.current = newPoint;
+    setTrailHistory(prev => {
+      const updated = [...prev, newPoint];
+      // Keep last 500 points max (about 8+ hours at 60s intervals)
+      if (updated.length > 500) {
+        return updated.slice(-500);
+      }
+      return updated;
+    });
+  }, []);
+  
+  // Start trail tracking
+  const startTrailTracking = useCallback(() => {
+    if (!navigator.geolocation) return;
+    
+    setIsTrackingTrail(true);
+    
+    // Watch position for real-time trail updates
+    trailWatchIdRef.current = navigator.geolocation.watchPosition(
+      (position) => {
+        addTrailPoint(
+          position.coords.latitude,
+          position.coords.longitude,
+          position.coords.accuracy
+        );
+      },
+      (error) => {
+        console.error('Trail tracking error:', error);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 30000,
+        maximumAge: 10000
+      }
+    );
+    
+    // Save trail to localStorage every 60 seconds
+    trailSaveIntervalRef.current = setInterval(() => {
+      setTrailHistory(current => {
+        saveTrailToStorage(current);
+        return current;
+      });
+    }, TRAIL_SAVE_INTERVAL);
+  }, [addTrailPoint]);
+  
+  // Stop trail tracking
+  const stopTrailTracking = useCallback(() => {
+    setIsTrackingTrail(false);
+    
+    if (trailWatchIdRef.current) {
+      navigator.geolocation.clearWatch(trailWatchIdRef.current);
+      trailWatchIdRef.current = null;
+    }
+    
+    if (trailSaveIntervalRef.current) {
+      clearInterval(trailSaveIntervalRef.current);
+      trailSaveIntervalRef.current = null;
+    }
+    
+    // Save current trail state
+    setTrailHistory(current => {
+      saveTrailToStorage(current);
+      return current;
+    });
+  }, []);
+  
+  // Clear trail history
+  const clearTrailHistory = useCallback(() => {
+    setTrailHistory([]);
+    lastTrailPointRef.current = null;
+    clearTrailFromStorage();
+  }, []);
+  
+  // Draw trail on canvas (offline fallback)
+  const drawTrailOnCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || trailHistory.length < 2) return;
+    
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height);
+    
+    // Draw grid background
+    ctx.fillStyle = '#f3f4f6';
+    ctx.fillRect(0, 0, width, height);
+    
+    ctx.strokeStyle = '#e5e7eb';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < width; i += 40) {
+      ctx.beginPath();
+      ctx.moveTo(i, 0);
+      ctx.lineTo(i, height);
+      ctx.stroke();
+    }
+    for (let i = 0; i < height; i += 40) {
+      ctx.beginPath();
+      ctx.moveTo(0, i);
+      ctx.lineTo(width, i);
+      ctx.stroke();
+    }
+    
+    // Calculate bounds
+    const lats = trailHistory.map(p => p.lat);
+    const lngs = trailHistory.map(p => p.lng);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+    
+    // Add padding
+    const latPadding = (maxLat - minLat) * 0.1 || 0.001;
+    const lngPadding = (maxLng - minLng) * 0.1 || 0.001;
+    
+    const latRange = (maxLat - minLat) + latPadding * 2;
+    const lngRange = (maxLng - minLng) + lngPadding * 2;
+    
+    // Convert geo to canvas coords
+    const toCanvasX = (lng) => ((lng - minLng + lngPadding) / lngRange) * (width - 40) + 20;
+    const toCanvasY = (lat) => height - ((lat - minLat + latPadding) / latRange) * (height - 40) - 20;
+    
+    // Draw trail line
+    ctx.beginPath();
+    ctx.strokeStyle = '#8B5CF6';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    trailHistory.forEach((point, i) => {
+      const x = toCanvasX(point.lng);
+      const y = toCanvasY(point.lat);
+      if (i === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    });
+    ctx.stroke();
+    
+    // Draw start point (green)
+    const startPoint = trailHistory[0];
+    ctx.beginPath();
+    ctx.fillStyle = '#10B981';
+    ctx.arc(toCanvasX(startPoint.lng), toCanvasY(startPoint.lat), 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('S', toCanvasX(startPoint.lng), toCanvasY(startPoint.lat));
+    
+    // Draw end point (current location - blue)
+    const endPoint = trailHistory[trailHistory.length - 1];
+    ctx.beginPath();
+    ctx.fillStyle = '#3B82F6';
+    ctx.arc(toCanvasX(endPoint.lng), toCanvasY(endPoint.lat), 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'white';
+    ctx.fillText('●', toCanvasX(endPoint.lng), toCanvasY(endPoint.lat));
+    
+    // Draw home base if set (red)
+    if (homeBase) {
+      const hx = toCanvasX(homeBase.lng);
+      const hy = toCanvasY(homeBase.lat);
+      // Check if home is within bounds
+      if (hx >= 0 && hx <= width && hy >= 0 && hy <= height) {
+        ctx.beginPath();
+        ctx.fillStyle = '#DC2626';
+        ctx.arc(hx, hy, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillText('H', hx, hy);
+      }
+    }
+    
+    // Draw legend
+    ctx.fillStyle = '#374151';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('S = Start  ● = You  H = Home', 10, height - 10);
+    
+    // Draw distance info
+    if (trailHistory.length >= 2) {
+      let totalDist = 0;
+      for (let i = 1; i < trailHistory.length; i++) {
+        totalDist += calculateDistance(
+          trailHistory[i-1].lat, trailHistory[i-1].lng,
+          trailHistory[i].lat, trailHistory[i].lng
+        );
+      }
+      ctx.textAlign = 'right';
+      ctx.fillText(`Trail: ${formatDistance(totalDist * 1000)}`, width - 10, height - 10);
+    }
+  }, [trailHistory, homeBase]);
+  
+  // Redraw canvas when trail or visibility changes
+  useEffect(() => {
+    if (showTrailCanvas) {
+      drawTrailOnCanvas();
+    }
+  }, [showTrailCanvas, trailHistory, drawTrailOnCanvas]);
 
   // Find closest instruction to current position
   const findCurrentInstruction = useCallback((userLat, userLng, instructions) => {
@@ -681,6 +966,20 @@ export default function FindMyWay() {
       center: [76.6551, 12.3051],
       zoom: 14,
       attributionControl: true
+    });
+    
+    // Track map load errors for offline fallback
+    map.on('error', (e) => {
+      console.warn('Map error:', e);
+      if (e.error?.message?.includes('Failed to fetch') || 
+          e.error?.message?.includes('NetworkError') ||
+          e.sourceId) {
+        setMapLoadFailed(true);
+      }
+    });
+    
+    map.on('load', () => {
+      setMapLoadFailed(false);
     });
 
     map.addControl(new maplibregl.NavigationControl(), 'top-right');
@@ -1186,6 +1485,105 @@ export default function FindMyWay() {
               </Card>
             )}
 
+            {/* Trail Tracking Card (Offline Support) */}
+            <Card className={`border-t-4 ${isTrackingTrail ? 'border-purple-500 bg-purple-50' : 'border-gray-300'}`}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                    <History className="w-5 h-5 text-purple-500" />
+                    {language === 'kn' ? 'ಪಥ ಟ್ರ್ಯಾಕರ್' : language === 'hi' ? 'पथ ट्रैकर' : 'Trail Tracker'}
+                    {mapLoadFailed && (
+                      <Badge className="bg-orange-100 text-orange-700 text-xs ml-2">
+                        <WifiOff className="w-3 h-3 mr-1" />
+                        {language === 'kn' ? 'ಆಫ್‌ಲೈನ್' : language === 'hi' ? 'ऑफ़लाइन' : 'Offline'}
+                      </Badge>
+                    )}
+                  </h3>
+                </div>
+                
+                <p className="text-xs text-gray-500 mb-3">
+                  {language === 'kn' 
+                    ? 'ನಿಮ್ಮ ಚಲನೆಯನ್ನು ಟ್ರ್ಯಾಕ್ ಮಾಡಿ. ಮ್ಯಾಪ್ ಲೋಡ್ ಆಗದಿದ್ದರೂ ಕೆಲಸ ಮಾಡುತ್ತದೆ!'
+                    : language === 'hi' 
+                    ? 'अपनी चाल को ट्रैक करें। मैप लोड न होने पर भी काम करता है!'
+                    : 'Track your movement. Works even if map fails to load!'}
+                </p>
+                
+                <div className="flex gap-2 mb-3">
+                  {!isTrackingTrail ? (
+                    <Button
+                      className="flex-1 bg-purple-600 hover:bg-purple-700"
+                      onClick={startTrailTracking}
+                    >
+                      <Radio className="w-4 h-4 mr-2" />
+                      {language === 'kn' ? 'ಟ್ರ್ಯಾಕಿಂಗ್ ಪ್ರಾರಂಭಿಸಿ' : language === 'hi' ? 'ट्रैकिंग शुरू करें' : 'Start Tracking'}
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="flex-1 border-purple-300 text-purple-700"
+                      onClick={stopTrailTracking}
+                    >
+                      <Pause className="w-4 h-4 mr-2" />
+                      {language === 'kn' ? 'ಟ್ರ್ಯಾಕಿಂಗ್ ನಿಲ್ಲಿಸಿ' : language === 'hi' ? 'ट्रैकिंग रोकें' : 'Stop Tracking'}
+                    </Button>
+                  )}
+                </div>
+                
+                {trailHistory.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">
+                        {language === 'kn' ? 'ದಾಖಲಾದ ಬಿಂದುಗಳು' : language === 'hi' ? 'रिकॉर्ड किए गए बिंदु' : 'Points recorded'}
+                      </span>
+                      <Badge className="bg-purple-100 text-purple-700">{trailHistory.length}</Badge>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => setShowTrailCanvas(!showTrailCanvas)}
+                      >
+                        {showTrailCanvas ? <EyeOff className="w-4 h-4 mr-1" /> : <Eye className="w-4 h-4 mr-1" />}
+                        {showTrailCanvas 
+                          ? (language === 'kn' ? 'ಮರೆಮಾಡಿ' : language === 'hi' ? 'छुपाएं' : 'Hide Trail')
+                          : (language === 'kn' ? 'ಪಥ ತೋರಿಸಿ' : language === 'hi' ? 'पथ दिखाएं' : 'Show Trail')
+                        }
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600 border-red-200 hover:bg-red-50"
+                        onClick={clearTrailHistory}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    
+                    {trailHistory.length >= 2 && (
+                      <Button
+                        size="sm"
+                        className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+                        onClick={() => setShowBacktrackMode(!showBacktrackMode)}
+                      >
+                        <Navigation className="w-4 h-4 mr-2" />
+                        {language === 'kn' ? 'ಹಿಂತಿರುಗಿ ಹೋಗಿ' : language === 'hi' ? 'वापस जाएं' : 'Backtrack My Path'}
+                      </Button>
+                    )}
+                  </div>
+                )}
+                
+                {isTrackingTrail && (
+                  <div className="mt-3 flex items-center gap-2 text-xs text-purple-600 bg-purple-100 p-2 rounded-lg">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
+                    {language === 'kn' ? 'ಪ್ರತಿ 60 ಸೆಕೆಂಡಿಗೆ ಸೇವ್ ಆಗುತ್ತಿದೆ...' : language === 'hi' ? 'हर 60 सेकंड में सेव हो रहा है...' : 'Saving every 60 seconds...'}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Safety Tips */}
             {!isNavigating && (
               <Card className="bg-amber-50 border-amber-200">
@@ -1199,15 +1597,98 @@ export default function FindMyWay() {
                     <li>• {t('findMyWayTip2') || 'Keep your phone charged and GPS enabled'}</li>
                     <li>• {t('findMyWayTip3') || 'Note nearby police booths along your route'}</li>
                     <li>• {t('findMyWayTip4') || 'Travel in groups when possible'}</li>
+                    <li>• {language === 'kn' ? 'ಆಫ್‌ಲೈನ್ ಬ್ಯಾಕ್‌ಟ್ರ್ಯಾಕ್‌ಗಾಗಿ ಟ್ರೇಲ್ ಟ್ರ್ಯಾಕಿಂಗ್ ಆನ್ ಮಾಡಿ' : language === 'hi' ? 'ऑफ़लाइन बैकट्रैक के लिए ट्रेल ट्रैकिंग चालू करें' : 'Turn on Trail Tracking for offline backtrack'}</li>
                   </ul>
                 </CardContent>
               </Card>
             )}
           </div>
 
-          {/* Map Container */}
-          <Card className="overflow-hidden">
+          {/* Map Container with Canvas Overlay */}
+          <Card className="overflow-hidden relative">
             <div ref={mapContainerRef} className="w-full h-[500px] lg:h-[700px]" />
+            
+            {/* Canvas overlay for offline trail display */}
+            {showTrailCanvas && trailHistory.length >= 2 && (
+              <div className="absolute inset-0 bg-white/95 z-10 flex flex-col">
+                <div className="bg-purple-600 text-white px-4 py-2 flex items-center justify-between">
+                  <span className="font-semibold flex items-center gap-2">
+                    <History className="w-5 h-5" />
+                    {language === 'kn' ? 'ನಿಮ್ಮ ಪಥ (ಆಫ್‌ಲೈನ್ ವೀಕ್ಷಣೆ)' : language === 'hi' ? 'आपका पथ (ऑफ़लाइन दृश्य)' : 'Your Trail (Offline View)'}
+                  </span>
+                  <button
+                    onClick={() => setShowTrailCanvas(false)}
+                    className="p-1 hover:bg-purple-700 rounded"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <canvas
+                  ref={canvasRef}
+                  width={600}
+                  height={500}
+                  className="flex-1 w-full"
+                  style={{ maxHeight: 'calc(100% - 40px)' }}
+                />
+              </div>
+            )}
+            
+            {/* Backtrack mode overlay */}
+            {showBacktrackMode && trailHistory.length >= 2 && (
+              <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur rounded-lg shadow-lg p-4 z-10">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-semibold text-purple-800 flex items-center gap-2">
+                    <Navigation className="w-5 h-5" />
+                    {language === 'kn' ? 'ಬ್ಯಾಕ್‌ಟ್ರ್ಯಾಕ್ ಮೋಡ್' : language === 'hi' ? 'बैकट्रैक मोड' : 'Backtrack Mode'}
+                  </h4>
+                  <button onClick={() => setShowBacktrackMode(false)} className="text-gray-400 hover:text-gray-600">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3 text-sm mb-3">
+                  <div className="bg-green-50 p-2 rounded">
+                    <p className="text-green-600 text-xs">{language === 'kn' ? 'ಆರಂಭ ಬಿಂದು' : language === 'hi' ? 'प्रारंभ बिंदु' : 'Start Point'}</p>
+                    <p className="font-mono text-xs">
+                      {trailHistory[0].lat.toFixed(5)}, {trailHistory[0].lng.toFixed(5)}
+                    </p>
+                  </div>
+                  <div className="bg-blue-50 p-2 rounded">
+                    <p className="text-blue-600 text-xs">{language === 'kn' ? 'ಪ್ರಸ್ತುತ' : language === 'hi' ? 'वर्तमान' : 'Current'}</p>
+                    <p className="font-mono text-xs">
+                      {trailHistory[trailHistory.length - 1].lat.toFixed(5)}, {trailHistory[trailHistory.length - 1].lng.toFixed(5)}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="bg-purple-50 p-3 rounded-lg">
+                  <p className="text-purple-700 text-sm">
+                    {language === 'kn' 
+                      ? '↩️ ನಿಮ್ಮ ಆರಂಭ ಬಿಂದುವಿಗೆ ಹಿಂತಿರುಗಲು, ನೇರಳೆ ಮಾರ್ಗವನ್ನು ಹಿಮ್ಮುಖವಾಗಿ ಅನುಸರಿಸಿ'
+                      : language === 'hi' 
+                      ? '↩️ अपने शुरुआती बिंदु पर वापस जाने के लिए, बैंगनी पथ को उल्टा अनुसरण करें'
+                      : '↩️ To return to your start point, follow the purple trail in reverse'}
+                  </p>
+                </div>
+                
+                <Button
+                  className="w-full mt-3"
+                  variant="outline"
+                  onClick={() => setShowTrailCanvas(true)}
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  {language === 'kn' ? 'ಪೂರ್ಣ ಪಥ ವೀಕ್ಷಿಸಿ' : language === 'hi' ? 'पूर्ण पथ देखें' : 'View Full Trail Map'}
+                </Button>
+              </div>
+            )}
+            
+            {/* Map load failed indicator */}
+            {mapLoadFailed && !showTrailCanvas && (
+              <div className="absolute top-4 left-4 bg-orange-100 text-orange-800 px-3 py-2 rounded-lg shadow flex items-center gap-2 text-sm z-10">
+                <WifiOff className="w-4 h-4" />
+                {language === 'kn' ? 'ಮ್ಯಾಪ್ ಲೋಡ್ ವಿಫಲ - ಟ್ರೇಲ್ ವೀಕ್ಷಣೆ ಬಳಸಿ' : language === 'hi' ? 'मैप लोड विफल - ट्रेल व्यू का उपयोग करें' : 'Map failed - Use Trail View'}
+              </div>
+            )}
           </Card>
         </div>
       </div>

@@ -637,7 +637,15 @@ export const TRANSLATIONS = {
     findMyWayTip1: "Set your home base before entering crowded areas",
     findMyWayTip2: "Keep your phone charged and GPS enabled",
     findMyWayTip3: "Note nearby police booths along your route",
-    findMyWayTip4: "Travel in groups when possible"
+    findMyWayTip4: "Travel in groups when possible",
+    // Home Location Popup
+    homePopupTitle: "Set Your Home Base",
+    homePopupDescription: "Lost in the festival crowd? Set a safe meeting point now so you can always find your way back to your loved ones.",
+    homePopupFeature1: "One-tap navigation back to your safe spot",
+    homePopupFeature2: "Works offline with trail tracking",
+    homePopupFeature3: "Choose hotel, vehicle, or police booth",
+    homePopupSetNow: "Set Home Base Now",
+    homePopupLater: "I'll do this later"
   },
   kn: {
     title: "ದಸರಾ ಮಿತ್ರ",
@@ -867,7 +875,15 @@ export const TRANSLATIONS = {
     findMyWayTip1: "ಜನಜಂಗುಳಿಗೆ ಹೋಗುವ ಮೊದಲು ಮೂಲ ಸ್ಥಳ ನಿಗದಿಪಡಿಸಿ",
     findMyWayTip2: "ಫೋನ್ ಚಾರ್ಜ್ ಮಾಡಿ ಮತ್ತು GPS ಸಕ್ರಿಯಗೊಳಿಸಿ",
     findMyWayTip3: "ಮಾರ್ಗದಲ್ಲಿ ಪೊಲೀಸ್ ಬೂತ್‌ಗಳನ್ನು ಗಮನಿಸಿ",
-    findMyWayTip4: "ಸಾಧ್ಯವಾದಾಗ ಗುಂಪಿನಲ್ಲಿ ಪ್ರಯಾಣಿಸಿ"
+    findMyWayTip4: "ಸಾಧ್ಯವಾದಾಗ ಗುಂಪಿನಲ್ಲಿ ಪ್ರಯಾಣಿಸಿ",
+    // Home Location Popup
+    homePopupTitle: "ನಿಮ್ಮ ಮೂಲ ಸ್ಥಳ ನಿಗದಿಪಡಿಸಿ",
+    homePopupDescription: "ಹಬ್ಬದ ಜನಜಂಗುಳಿಯಲ್ಲಿ ಕಳೆದುಹೋದಿರಾ? ಈಗಲೇ ಸುರಕ್ಷಿತ ಸ್ಥಳ ನಿಗದಿಪಡಿಸಿ, ನಿಮ್ಮ ಪ್ರೀತಿಪಾತ್ರರ ಬಳಿಗೆ ಯಾವಾಗಲೂ ಹಿಂತಿರುಗಬಹುದು.",
+    homePopupFeature1: "ನಿಮ್ಮ ಸುರಕ್ಷಿತ ಸ್ಥಳಕ್ಕೆ ಒಂದೇ ಟ್ಯಾಪ್‌ನಲ್ಲಿ ನ್ಯಾವಿಗೇಷನ್",
+    homePopupFeature2: "ಟ್ರೇಲ್ ಟ್ರ್ಯಾಕಿಂಗ್‌ನೊಂದಿಗೆ ಆಫ್‌ಲೈನ್‌ನಲ್ಲಿಯೂ ಕಾರ್ಯನಿರ್ವಹಿಸುತ್ತದೆ",
+    homePopupFeature3: "ಹೋಟೆಲ್, ವಾಹನ ಅಥವಾ ಪೊಲೀಸ್ ಬೂತ್ ಆಯ್ಕೆಮಾಡಿ",
+    homePopupSetNow: "ಈಗ ಮೂಲ ಸ್ಥಳ ನಿಗದಿಪಡಿಸಿ",
+    homePopupLater: "ನಾನು ನಂತರ ಮಾಡುತ್ತೇನೆ"
   },
   hi: {
     title: "दसरा मित्र",
@@ -1097,7 +1113,15 @@ export const TRANSLATIONS = {
     findMyWayTip1: "भीड़ वाले क्षेत्र में जाने से पहले होम बेस सेट करें",
     findMyWayTip2: "फ़ोन चार्ज रखें और GPS चालू रखें",
     findMyWayTip3: "रास्ते में पुलिस बूथ नोट करें",
-    findMyWayTip4: "जब संभव हो समूह में यात्रा करें"
+    findMyWayTip4: "जब संभव हो समूह में यात्रा करें",
+    // Home Location Popup
+    homePopupTitle: "अपना होम बेस सेट करें",
+    homePopupDescription: "त्योहार की भीड़ में खो गए? अभी एक सुरक्षित स्थान सेट करें ताकि आप हमेशा अपने प्रियजनों के पास वापस जा सकें।",
+    homePopupFeature1: "एक टैप में अपने सुरक्षित स्थान पर नेविगेशन",
+    homePopupFeature2: "ट्रेल ट्रैकिंग के साथ ऑफ़लाइन भी काम करता है",
+    homePopupFeature3: "होटल, वाहन या पुलिस बूथ चुनें",
+    homePopupSetNow: "अभी होम बेस सेट करें",
+    homePopupLater: "मैं बाद में करूँगा"
   }
 };
 
