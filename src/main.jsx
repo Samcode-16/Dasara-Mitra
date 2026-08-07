@@ -6,6 +6,7 @@ import Home from '../Pages/Home.jsx';
 import Events from '../Pages/Events.jsx';
 import Transport from '../Pages/Transport.jsx';
 import GalleryPage from '../Pages/Gallery.jsx';
+import FindMyWayPage from '../Pages/FindMyWay.jsx';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -17,6 +18,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/events" element={<Events />} />
           <Route path="/transport" element={<Transport />} />
           <Route path="/gallery" element={<GalleryPage />} />
+          <Route path="/find-my-way" element={<FindMyWayPage />} />
         </Routes>
       </Layout>
     </BrowserRouter>

@@ -95,9 +95,36 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // Extract turn-by-turn instructions
+    const instructions = route.guidance?.instructions?.map((inst) => ({
+      maneuver: inst.maneuver || 'STRAIGHT',
+      message: inst.message || inst.street || '',
+      street: inst.street || '',
+      distanceMeters: inst.routeOffsetInMeters || 0,
+      travelTimeSeconds: inst.travelTimeInSeconds || 0,
+      point: inst.point ? [inst.point.longitude, inst.point.latitude] : null,
+      combinedMessage: inst.combinedMessage || inst.message || ''
+    })) || [];
+
+    // Also extract from legs if guidance not available
+    const legInstructions = route.legs?.flatMap((leg) => 
+      leg.instructions?.map((inst) => ({
+        maneuver: inst.maneuver || 'STRAIGHT',
+        message: inst.message || '',
+        street: inst.street || '',
+        distanceMeters: inst.routeOffsetInMeters || 0,
+        travelTimeSeconds: inst.travelTimeInSeconds || 0,
+        point: inst.point ? [inst.point.longitude, inst.point.latitude] : null,
+        combinedMessage: inst.combinedMessage || inst.message || ''
+      })) || []
+    ) || [];
+
+    const allInstructions = instructions.length > 0 ? instructions : legInstructions;
+
     respond(res, 200, {
       coordinates: lineCoordinates,
-      summary: route.summary ?? null
+      summary: route.summary ?? null,
+      instructions: allInstructions
     }, origin);
   } catch (error) {
     respond(res, 502, { error: 'tomtom-unavailable', detail: error?.message || 'unknown' }, origin);
