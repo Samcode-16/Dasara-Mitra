@@ -99,6 +99,13 @@ export async function askFestivalAssistant({
 
   if (!response.ok) {
     const details = await response.json().catch(() => ({}));
+    if (
+      response.status === 429 ||
+      details?.error === "rate-limit-exceeded" ||
+      /quota|rate limit|RESOURCE_EXHAUSTED/i.test(JSON.stringify(details))
+    ) {
+      throw new Error("rate-limit-exceeded");
+    }
     const message =
       details?.detail ||
       details?.error?.message ||

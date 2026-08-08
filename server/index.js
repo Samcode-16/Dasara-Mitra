@@ -13,7 +13,7 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const GEMINI_ENDPOINT = (model) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${GEMINI_API_KEY}`;
 
@@ -74,7 +74,7 @@ const originMatchers = allowedOrigins.map((origin) => {
   return { type: "exact", value: normalizeOrigin(origin) };
 });
 
-const TOMTOM_API_KEY = process.env.TOMTOM_API_KEY;
+const TOMTOM_API_KEY = process.env.TOMTOM_API_KEY || process.env.VITE_TOMTOM_API_KEY;
 const VALID_TRAVEL_MODES = new Set([
   "pedestrian",
   "car",
@@ -205,6 +205,10 @@ const extractGeminiErrorDetail = (data) => {
   return JSON.stringify(data);
 };
 
+const CANDIDATE_MODELS = Array.from(
+  new Set([GEMINI_MODEL, "gemini-3.5-flash", "gemini-2.0-flash", "gemini-2.5-flash"])
+);
+
 app.post("/api/assistant", async (req, res) => {
   if (!GEMINI_API_KEY) {
     return res.status(500).json({ error: "missing-gemini-key" });
@@ -215,60 +219,74 @@ app.post("/api/assistant", async (req, res) => {
     return res.status(400).json({ error: "missing-payload" });
   }
 
-  try {
-    const upstream = await fetch(GEMINI_ENDPOINT(GEMINI_MODEL), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [
-            {
-              text: "You are Dasara Mitra, a warm cultural guide for Mysuru Dasara.",
-            },
-          ],
-        },
-        contents: toGeminiContents(payload.messages),
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 256,
-        },
-      }),
-    });
+  let lastStatus = 502;
+  let lastErrorDetail = "unknown-error";
 
-    let data;
+  for (const model of CANDIDATE_MODELS) {
     try {
-      data = await upstream.json();
-    } catch (jsonError) {
-      console.error("API response not JSON:", await upstream.text());
-      return res
-        .status(502)
-        .json({ error: "upstream-error", detail: "Invalid JSON from API" });
-    }
-
-    if (!upstream.ok) {
-      console.error("API error:", data);
-      return res.status(upstream.status).json({
-        error: "upstream-error",
-        detail: extractGeminiErrorDetail(data),
-        upstreamStatus: upstream.status,
+      const upstream = await fetch(GEMINI_ENDPOINT(model), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [
+              {
+                text:
+                  "You are Dasara Mitra, an exclusive, warm cultural guide dedicated to Mysuru Dasara, Mysuru tourism, culture, festival events, venues, history, local food, and travel in Mysuru.\n\n" +
+                  "STRICT FORMATTING RULE:\n" +
+                  "Do NOT use any asterisks (*) or double asterisks (**) or markdown bolding anywhere in your response. Write clean plain text using standard sentences or simple dashes (-) for lists, ensuring it sounds completely natural when read out loud.\n\n" +
+                  "STRICT SCOPE RULE:\n" +
+                  "You MUST ONLY answer questions related to Mysuru, Mysuru Dasara, festival events, venues, local transport, culture, history, and tourism in Mysuru.\n" +
+                  "If a user asks about completely unrelated topics (e.g. programming, mathematics, general science, finance, world politics, or non-Mysuru topics), politely decline and warmly redirect them to ask about Mysuru Dasara or visiting Mysuru.",
+              },
+            ],
+          },
+          contents: toGeminiContents(payload.messages),
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 2048,
+          },
+        }),
       });
-    }
 
-    const reply = extractGeminiReply(data);
-    if (!reply) {
-      return res.status(502).json({ error: "empty-response" });
-    }
+      let data;
+      try {
+        data = await upstream.json();
+      } catch (jsonError) {
+        lastStatus = 502;
+        lastErrorDetail = "Invalid JSON from API";
+        continue;
+      }
 
-    res.status(upstream.status).json({ reply, raw: data });
-  } catch (error) {
-    console.error("Assistant proxy error:", error);
-    res.status(502).json({
-      error: "upstream-error",
-      detail: error?.message || "unknown-error",
-    });
+      if (upstream.ok) {
+        const reply = extractGeminiReply(data);
+        if (reply) {
+          return res.status(200).json({ reply, raw: data });
+        }
+      }
+
+      lastStatus = upstream.status;
+      lastErrorDetail = extractGeminiErrorDetail(data);
+      console.warn(`Model ${model} returned status ${upstream.status}: ${lastErrorDetail}`);
+    } catch (error) {
+      console.error(`Error trying model ${model}:`, error);
+      lastErrorDetail = error?.message || "unknown-error";
+    }
   }
+
+  const isRateLimit =
+    lastStatus === 429 ||
+    /quota|rate limit|RESOURCE_EXHAUSTED/i.test(lastErrorDetail);
+
+  res.status(isRateLimit ? 429 : lastStatus).json({
+    error: isRateLimit ? "rate-limit-exceeded" : "upstream-error",
+    detail: isRateLimit
+      ? "The AI assistant is receiving high traffic right now. Please wait a few seconds and try again."
+      : lastErrorDetail,
+    upstreamStatus: lastStatus,
+  });
 });
 
 app.get("/api/osrm-route", async (req, res) => {

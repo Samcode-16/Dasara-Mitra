@@ -50,7 +50,8 @@ const speakResponse = (text, locale, setSpeaking) => {
   }
   window.speechSynthesis.cancel();
   try {
-    const utterance = new SpeechSynthesisUtterance(text);
+    const cleanText = text.replace(/\*/g, '');
+    const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.lang = locale || 'en-IN';
     utterance.rate = 1;
     utterance.onend = () => setSpeaking(false);
@@ -173,8 +174,12 @@ const VoiceAssistant = forwardRef(function VoiceAssistant({ open = false, onOpen
         setStatus('responded');
         speakResponse(reply, SPEECH_LOCALES[responseLanguage] || locale, setIsSpeaking);
       } catch (err) {
-        const message = err?.message || 'voice-error';
-        setError(message);
+        const rawMessage = err?.message || 'voice-error';
+        const isRateLimit = rawMessage === 'rate-limit-exceeded' || /quota|rate limit|RESOURCE_EXHAUSTED/i.test(rawMessage);
+        const friendlyMessage = isRateLimit
+          ? (responseLanguage === 'kn' ? 'ಎಐ ಸಹಾಯಕ ಪ್ರಸ್ತುತ ಹೆಚ್ಚಿನ ವಿನಂತಿಗಳನ್ನು ಪಡೆಯುತ್ತಿದೆ. ದಯವಿಟ್ಟು ಕೆಲವು ಸೆಕೆಂಡುಗಳ ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.' : 'The AI assistant is receiving high traffic right now. Please wait a few seconds and try again.')
+          : rawMessage;
+        setError(friendlyMessage);
         setStatus('error');
       }
     },

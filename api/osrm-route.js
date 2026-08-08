@@ -3,23 +3,29 @@ const fetch = globalThis.fetch;
 const respond = (res, statusCode, payload, origin) => {
   res.status(statusCode);
   if (origin) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader("Access-Control-Allow-Origin", origin);
   } else {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader("Access-Control-Allow-Origin", "*");
   }
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.json(payload);
 };
 
-const VALID_TRAVEL_MODES = new Set(['pedestrian', 'car', 'bicycle', 'truck', 'bus']);
+const VALID_TRAVEL_MODES = new Set([
+  "pedestrian",
+  "car",
+  "bicycle",
+  "truck",
+  "bus",
+]);
 
-const normalizeCoordinates = (coordsParam = '') => {
+const normalizeCoordinates = (coordsParam = "") => {
   return coordsParam
-    .split(';')
+    .split(";")
     .map((pair) => pair.trim())
     .map((pair) => {
-      const [lng, lat] = pair.split(',').map((value) => Number(value.trim()));
+      const [lng, lat] = pair.split(",").map((value) => Number(value.trim()));
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
         return null;
       }
@@ -31,58 +37,76 @@ const normalizeCoordinates = (coordsParam = '') => {
 module.exports = async (req, res) => {
   const origin = req.headers.origin;
 
-  if (req.method === 'OPTIONS') {
-    respond(res, 200, { status: 'ok' }, origin);
+  if (req.method === "OPTIONS") {
+    respond(res, 200, { status: "ok" }, origin);
     return;
   }
 
-  if (req.method !== 'GET') {
-    res.setHeader('Allow', 'GET, OPTIONS');
-    respond(res, 405, { error: 'method-not-allowed' }, origin);
+  if (req.method !== "GET") {
+    res.setHeader("Allow", "GET, OPTIONS");
+    respond(res, 405, { error: "method-not-allowed" }, origin);
     return;
   }
 
-  const apiKey = process.env.TOMTOM_API_KEY;
+  const apiKey = process.env.TOMTOM_API_KEY || process.env.VITE_TOMTOM_API_KEY;
   if (!apiKey) {
-    respond(res, 500, { error: 'missing-tomtom-key' }, origin);
+    respond(res, 500, { error: "missing-tomtom-key" }, origin);
     return;
   }
 
-  const coordsParam = typeof req.query?.coords === 'string' ? req.query.coords.trim() : null;
+  const coordsParam =
+    typeof req.query?.coords === "string" ? req.query.coords.trim() : null;
   if (!coordsParam) {
-    respond(res, 400, { error: 'missing-coords' }, origin);
+    respond(res, 400, { error: "missing-coords" }, origin);
     return;
   }
 
   const coordinates = normalizeCoordinates(coordsParam);
   if (coordinates.length < 2) {
-    respond(res, 400, { error: 'insufficient-coords' }, origin);
+    respond(res, 400, { error: "insufficient-coords" }, origin);
     return;
   }
 
-  const requestedMode = typeof req.query?.mode === 'string' ? req.query.mode.toLowerCase() : 'pedestrian';
-  const travelMode = VALID_TRAVEL_MODES.has(requestedMode) ? requestedMode : 'pedestrian';
+  const requestedMode =
+    typeof req.query?.mode === "string"
+      ? req.query.mode.toLowerCase()
+      : "pedestrian";
+  const travelMode = VALID_TRAVEL_MODES.has(requestedMode)
+    ? requestedMode
+    : "pedestrian";
 
-  const pathSegment = coordinates.map(({ lat, lng }) => `${lat},${lng}`).join(':');
-  const routingUrl = new URL(`https://api.tomtom.com/routing/1/calculateRoute/${pathSegment}/json`);
-  routingUrl.searchParams.set('key', apiKey);
-  routingUrl.searchParams.set('travelMode', travelMode);
-  routingUrl.searchParams.set('instructionsType', 'text');
-  routingUrl.searchParams.set('avoid', 'unpavedRoads');
-  routingUrl.searchParams.set('sectionType', travelMode === 'pedestrian' ? 'pedestrian' : 'traffic');
-  routingUrl.searchParams.set('computeTravelTimeFor', 'all');
+  const pathSegment = coordinates
+    .map(({ lat, lng }) => `${lat},${lng}`)
+    .join(":");
+  const routingUrl = new URL(
+    `https://api.tomtom.com/routing/1/calculateRoute/${pathSegment}/json`,
+  );
+  routingUrl.searchParams.set("key", apiKey);
+  routingUrl.searchParams.set("travelMode", travelMode);
+  routingUrl.searchParams.set("instructionsType", "text");
+  routingUrl.searchParams.set("avoid", "unpavedRoads");
+  routingUrl.searchParams.set(
+    "sectionType",
+    travelMode === "pedestrian" ? "pedestrian" : "traffic",
+  );
+  routingUrl.searchParams.set("computeTravelTimeFor", "all");
 
   try {
     const upstream = await fetch(routingUrl.toString());
     if (!upstream.ok) {
-      respond(res, upstream.status, { error: 'tomtom-error', detail: `status-${upstream.status}` }, origin);
+      respond(
+        res,
+        upstream.status,
+        { error: "tomtom-error", detail: `status-${upstream.status}` },
+        origin,
+      );
       return;
     }
 
     const data = await upstream.json();
     const route = data?.routes?.[0];
     if (!route) {
-      respond(res, 502, { error: 'tomtom-empty' }, origin);
+      respond(res, 502, { error: "tomtom-empty" }, origin);
       return;
     }
 
@@ -91,42 +115,58 @@ module.exports = async (req, res) => {
       .map((point) => [point.longitude, point.latitude]);
 
     if (!lineCoordinates?.length) {
-      respond(res, 502, { error: 'tomtom-no-points' }, origin);
+      respond(res, 502, { error: "tomtom-no-points" }, origin);
       return;
     }
 
     // Extract turn-by-turn instructions
-    const instructions = route.guidance?.instructions?.map((inst) => ({
-      maneuver: inst.maneuver || 'STRAIGHT',
-      message: inst.message || inst.street || '',
-      street: inst.street || '',
-      distanceMeters: inst.routeOffsetInMeters || 0,
-      travelTimeSeconds: inst.travelTimeInSeconds || 0,
-      point: inst.point ? [inst.point.longitude, inst.point.latitude] : null,
-      combinedMessage: inst.combinedMessage || inst.message || ''
-    })) || [];
-
-    // Also extract from legs if guidance not available
-    const legInstructions = route.legs?.flatMap((leg) => 
-      leg.instructions?.map((inst) => ({
-        maneuver: inst.maneuver || 'STRAIGHT',
-        message: inst.message || '',
-        street: inst.street || '',
+    const instructions =
+      route.guidance?.instructions?.map((inst) => ({
+        maneuver: inst.maneuver || "STRAIGHT",
+        message: inst.message || inst.street || "",
+        street: inst.street || "",
         distanceMeters: inst.routeOffsetInMeters || 0,
         travelTimeSeconds: inst.travelTimeInSeconds || 0,
         point: inst.point ? [inst.point.longitude, inst.point.latitude] : null,
-        combinedMessage: inst.combinedMessage || inst.message || ''
-      })) || []
-    ) || [];
+        combinedMessage: inst.combinedMessage || inst.message || "",
+      })) || [];
 
-    const allInstructions = instructions.length > 0 ? instructions : legInstructions;
+    // Also extract from legs if guidance not available
+    const legInstructions =
+      route.legs?.flatMap(
+        (leg) =>
+          leg.instructions?.map((inst) => ({
+            maneuver: inst.maneuver || "STRAIGHT",
+            message: inst.message || "",
+            street: inst.street || "",
+            distanceMeters: inst.routeOffsetInMeters || 0,
+            travelTimeSeconds: inst.travelTimeInSeconds || 0,
+            point: inst.point
+              ? [inst.point.longitude, inst.point.latitude]
+              : null,
+            combinedMessage: inst.combinedMessage || inst.message || "",
+          })) || [],
+      ) || [];
 
-    respond(res, 200, {
-      coordinates: lineCoordinates,
-      summary: route.summary ?? null,
-      instructions: allInstructions
-    }, origin);
+    const allInstructions =
+      instructions.length > 0 ? instructions : legInstructions;
+
+    respond(
+      res,
+      200,
+      {
+        coordinates: lineCoordinates,
+        summary: route.summary ?? null,
+        instructions: allInstructions,
+      },
+      origin,
+    );
   } catch (error) {
-    respond(res, 502, { error: 'tomtom-unavailable', detail: error?.message || 'unknown' }, origin);
+    respond(
+      res,
+      502,
+      { error: "tomtom-unavailable", detail: error?.message || "unknown" },
+      origin,
+    );
   }
 };

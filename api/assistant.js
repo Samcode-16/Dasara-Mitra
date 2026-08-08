@@ -54,7 +54,7 @@ const respond = (res, statusCode, payload, origin) => {
 };
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const GEMINI_ENDPOINT = (model) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${GEMINI_API_KEY}`;
 
@@ -124,6 +124,15 @@ const extractGeminiErrorDetail = (data) => {
   return JSON.stringify(data);
 };
 
+const CANDIDATE_MODELS = Array.from(
+  new Set([
+    GEMINI_MODEL,
+    "gemini-3.5-flash",
+    "gemini-2.0-flash",
+    "gemini-2.5-flash",
+  ]),
+);
+
 module.exports = async (req, res) => {
   const origin = req.headers.origin;
 
@@ -154,57 +163,68 @@ module.exports = async (req, res) => {
     return;
   }
 
-  try {
-    const upstream = await fetch(GEMINI_ENDPOINT(GEMINI_MODEL), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [
-            {
-              text: "You are Dasara Mitra, a warm cultural guide for Mysuru Dasara.",
-            },
-          ],
-        },
-        contents: toGeminiContents(payload.messages),
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 256,
-        },
-      }),
-    });
+  let lastStatus = 502;
+  let lastErrorDetail = "unknown-error";
 
-    const data = await upstream.json();
-    if (!upstream.ok) {
-      respond(
-        res,
-        upstream.status,
-        {
-          error: "upstream-error",
-          detail: extractGeminiErrorDetail(data),
-          upstreamStatus: upstream.status,
+  for (const model of CANDIDATE_MODELS) {
+    try {
+      const upstream = await fetch(GEMINI_ENDPOINT(model), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-        origin,
-      );
-      return;
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [
+              {
+                text:
+                  "You are Dasara Mitra, an exclusive, warm cultural guide dedicated to Mysuru Dasara, Mysuru tourism, culture, festival events, venues, history, local food, and travel in Mysuru.\n\n" +
+                  "STRICT FORMATTING RULE:\n" +
+                  "Do NOT use any asterisks (*) or double asterisks (**) or markdown bolding anywhere in your response. Write clean plain text using standard sentences or simple dashes (-) for lists, ensuring it sounds completely natural when read out loud.\n\n" +
+                  "STRICT SCOPE RULE:\n" +
+                  "You MUST ONLY answer questions related to Mysuru, Mysuru Dasara, festival events, venues, local transport, culture, history, and tourism in Mysuru.\n" +
+                  "If a user asks about completely unrelated topics (e.g. programming, mathematics, general science, finance, world politics, or non-Mysuru topics), politely decline and warmly redirect them to ask about Mysuru Dasara or visiting Mysuru.",
+              },
+            ],
+          },
+          contents: toGeminiContents(payload.messages),
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 2048,
+          },
+        }),
+      });
+
+      const data = await upstream.json().catch(() => null);
+      if (upstream.ok && data) {
+        const reply = extractGeminiReply(data);
+        if (reply) {
+          respond(res, 200, { reply, raw: data }, origin);
+          return;
+        }
+      }
+
+      lastStatus = upstream.status;
+      lastErrorDetail = extractGeminiErrorDetail(data);
+    } catch (error) {
+      lastErrorDetail = error?.message || "unknown-error";
     }
-
-    const reply = extractGeminiReply(data);
-    if (!reply) {
-      respond(res, 502, { error: "empty-response" }, origin);
-      return;
-    }
-
-    respond(res, 200, { reply, raw: data }, origin);
-  } catch (error) {
-    console.error("Assistant function error:", error);
-    respond(
-      res,
-      502,
-      { error: "upstream-error", detail: error?.message || "unknown-error" },
-      origin,
-    );
   }
+
+  const isRateLimit =
+    lastStatus === 429 ||
+    /quota|rate limit|RESOURCE_EXHAUSTED/i.test(lastErrorDetail);
+
+  respond(
+    res,
+    isRateLimit ? 429 : lastStatus,
+    {
+      error: isRateLimit ? "rate-limit-exceeded" : "upstream-error",
+      detail: isRateLimit
+        ? "The AI assistant is receiving high traffic right now. Please wait a few seconds and try again."
+        : lastErrorDetail,
+      upstreamStatus: lastStatus,
+    },
+    origin,
+  );
 };

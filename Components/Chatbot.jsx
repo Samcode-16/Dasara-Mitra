@@ -89,9 +89,23 @@ export default function Chatbot() {
           },
         ]);
       } else if (
+        problem === "rate-limit-exceeded" ||
+        problem.startsWith("RESOURCE_EXHAUSTED") ||
+        /quota|rate limit/i.test(problem)
+      ) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content:
+              language === "kn"
+                ? "ಎಐ ಸಹಾಯಕ ಪ್ರಸ್ತುತ ಹೆಚ್ಚಿನ ವಿನಂತಿಗಳನ್ನು ಪಡೆಯುತ್ತಿದೆ. ದಯವಿಟ್ಟು ಕೆಲವು ಸೆಕೆಂಡುಗಳ ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
+                : "The AI assistant is receiving high traffic right now. Please wait a few seconds and try again.",
+          },
+        ]);
+      } else if (
         problem.startsWith("INVALID_") ||
         problem.startsWith("PERMISSION_") ||
-        problem.startsWith("RESOURCE_EXHAUSTED") ||
         problem.startsWith("UNAUTHENTICATED") ||
         problem.startsWith("FAILED_PRECONDITION")
       ) {
