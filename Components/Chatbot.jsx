@@ -88,6 +88,20 @@ export default function Chatbot() {
               "The Dasara helper service is offline. Start the backend proxy and try again.",
           },
         ]);
+      } else if (
+        problem.startsWith("INVALID_") ||
+        problem.startsWith("PERMISSION_") ||
+        problem.startsWith("RESOURCE_EXHAUSTED") ||
+        problem.startsWith("UNAUTHENTICATED") ||
+        problem.startsWith("FAILED_PRECONDITION")
+      ) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: `Gemini rejected the request: ${problem}. Check the API key, model name, and Gemini API access in your Google Cloud project.`,
+          },
+        ]);
       } else if (problem === "empty-response") {
         setMessages((prev) => [
           ...prev,

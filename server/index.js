@@ -2,8 +2,12 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import fetch from "node-fetch";
+import path from "path";
+import { fileURLToPath } from "url";
 
 dotenv.config();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, "..", ".env"), override: true });
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -177,6 +181,30 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
+const extractGeminiErrorDetail = (data) => {
+  if (!data) {
+    return "unknown-gemini-error";
+  }
+
+  if (typeof data.error === "string") {
+    return data.error;
+  }
+
+  if (data.error?.message) {
+    return data.error.message;
+  }
+
+  if (data.error?.status) {
+    return `${data.error.status}${data.error?.code ? `:${data.error.code}` : ""}`;
+  }
+
+  if (data.message) {
+    return data.message;
+  }
+
+  return JSON.stringify(data);
+};
+
 app.post("/api/assistant", async (req, res) => {
   if (!GEMINI_API_KEY) {
     return res.status(500).json({ error: "missing-gemini-key" });
@@ -221,9 +249,11 @@ app.post("/api/assistant", async (req, res) => {
 
     if (!upstream.ok) {
       console.error("API error:", data);
-      return res
-        .status(upstream.status)
-        .json({ error: "upstream-error", detail: data });
+      return res.status(upstream.status).json({
+        error: "upstream-error",
+        detail: extractGeminiErrorDetail(data),
+        upstreamStatus: upstream.status,
+      });
     }
 
     const reply = extractGeminiReply(data);
@@ -234,9 +264,10 @@ app.post("/api/assistant", async (req, res) => {
     res.status(upstream.status).json({ reply, raw: data });
   } catch (error) {
     console.error("Assistant proxy error:", error);
-    res
-      .status(502)
-      .json({ error: "upstream-error", detail: error?.message || error });
+    res.status(502).json({
+      error: "upstream-error",
+      detail: error?.message || "unknown-error",
+    });
   }
 });
 

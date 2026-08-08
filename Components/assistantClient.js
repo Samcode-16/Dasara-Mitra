@@ -100,6 +100,7 @@ export async function askFestivalAssistant({
   if (!response.ok) {
     const details = await response.json().catch(() => ({}));
     const message =
+      details?.detail ||
       details?.error?.message ||
       details?.error ||
       response.statusText ||

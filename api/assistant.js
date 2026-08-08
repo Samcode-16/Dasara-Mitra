@@ -100,6 +100,30 @@ const extractGeminiReply = (data) => {
     .trim();
 };
 
+const extractGeminiErrorDetail = (data) => {
+  if (!data) {
+    return "unknown-gemini-error";
+  }
+
+  if (typeof data.error === "string") {
+    return data.error;
+  }
+
+  if (data.error?.message) {
+    return data.error.message;
+  }
+
+  if (data.error?.status) {
+    return `${data.error.status}${data.error?.code ? `:${data.error.code}` : ""}`;
+  }
+
+  if (data.message) {
+    return data.message;
+  }
+
+  return JSON.stringify(data);
+};
+
 module.exports = async (req, res) => {
   const origin = req.headers.origin;
 
@@ -157,7 +181,11 @@ module.exports = async (req, res) => {
       respond(
         res,
         upstream.status,
-        { error: "upstream-error", detail: data },
+        {
+          error: "upstream-error",
+          detail: extractGeminiErrorDetail(data),
+          upstreamStatus: upstream.status,
+        },
         origin,
       );
       return;
@@ -172,6 +200,11 @@ module.exports = async (req, res) => {
     respond(res, 200, { reply, raw: data }, origin);
   } catch (error) {
     console.error("Assistant function error:", error);
-    respond(res, 502, { error: "upstream-error" }, origin);
+    respond(
+      res,
+      502,
+      { error: "upstream-error", detail: error?.message || "unknown-error" },
+      origin,
+    );
   }
 };
