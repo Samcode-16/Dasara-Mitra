@@ -1,10 +1,23 @@
-import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { Navigation, Calendar, Info, RefreshCw, Search, Map as MapIcon, Sparkles } from 'lucide-react';
-import { useLanguage, EVENTS_DATA } from './DasaraContext';
-import { Button, Card, CardContent, Badge } from './ui.jsx';
-import maplibregl from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
-
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+} from "react";
+import {
+  Navigation,
+  Calendar,
+  Info,
+  RefreshCw,
+  Search,
+  Map as MapIcon,
+  Sparkles,
+} from "lucide-react";
+import { useLanguage, EVENTS_DATA } from "./DasaraContext";
+import { Button, Card, CardContent, Badge } from "./ui.jsx";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 
 const PROCESSION_BASELINE_ROUTE = [
   [12.305163, 76.6551749],
@@ -26,33 +39,33 @@ const PROCESSION_BASELINE_ROUTE = [
   [12.32959, 76.655],
   [12.33147, 76.65499],
   [12.33328, 76.65499],
-  [12.3340167, 76.6549883]
+  [12.3340167, 76.6549883],
 ];
 
 const FALLBACK_EVENT_CLOUDINARY_TAGS = {
-  1: 'dasara_jamboo_savari',
-  2: 'dasara_torchlight',
-  3: 'dasara_palace_illu',
-  4: 'dasara_exhibition',
-  5: 'dasara_flower_show',
-  6: 'dasara_yuva',
-  7: 'dasara_wrestling',
-  8: 'dasara_kavi_goshti',
-  9: 'dasara_ahara_mela',
- 10: 'dasara_palace_cultural',
- 11: 'dasara_drone_show',
- 12: 'dasara_heritage_show',
- 13: 'dasara_makkala',
- 14: 'dasara_raitha',
- 15: 'dasara_vintage_car',
- 17: 'dasara_folk_dance',
- 18: 'dasara_adv_zone'
+  1: "dasara_jamboo_savari",
+  2: "dasara_torchlight",
+  3: "dasara_palace_illu",
+  4: "dasara_exhibition",
+  5: "dasara_flower_show",
+  6: "dasara_yuva",
+  7: "dasara_wrestling",
+  8: "dasara_kavi_goshti",
+  9: "dasara_ahara_mela",
+  10: "dasara_palace_cultural",
+  11: "dasara_drone_show",
+  12: "dasara_heritage_show",
+  13: "dasara_makkala",
+  14: "dasara_raitha",
+  15: "dasara_vintage_car",
+  17: "dasara_folk_dance",
+  18: "dasara_adv_zone",
 };
 
-const IMAGE_CACHE_STORAGE_KEY = 'dasara-events-image-cache';
+const IMAGE_CACHE_STORAGE_KEY = "dasara-events-image-cache";
 const IMAGE_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
 
-const stripQuotes = (value = '') => value.replace(/^['"`]+|['"`]+$/g, '');
+const stripQuotes = (value = "") => value.replace(/^['"`]+|['"`]+$/g, "");
 
 const parseEventImageTagConfig = () => {
   const raw = import.meta.env.VITE_EVENT_CLOUDINARY_TAGS;
@@ -75,12 +88,12 @@ const parseEventImageTagConfig = () => {
 
   try {
     const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed === 'object') {
+    if (parsed && typeof parsed === "object") {
       Object.entries(parsed).forEach(([key, value]) => assignPair(key, value));
     }
   } catch (error) {
-    raw.split(',').forEach((entry) => {
-      const [key, value] = entry.split(':');
+    raw.split(",").forEach((entry) => {
+      const [key, value] = entry.split(":");
       assignPair(key, value);
     });
   }
@@ -91,27 +104,27 @@ const parseEventImageTagConfig = () => {
 
   return {
     ...FALLBACK_EVENT_CLOUDINARY_TAGS,
-    ...normalized
+    ...normalized,
   };
 };
 
-const browserTomTomKey = (import.meta.env.VITE_TOMTOM_API_KEY || '').trim();
-const rawBackendBaseUrl = (import.meta.env.VITE_ASSISTANT_API_BASE_URL?.trim() || '').replace(/\/$/, '');
-const PRODUCTION_ROUTING_ENDPOINT = 'https://dasaramitra.vercel.app/api/osrm-route';
+const browserTomTomKey = (import.meta.env.VITE_TOMTOM_API_KEY || "").trim();
+const rawBackendBaseUrl = (
+  import.meta.env.VITE_ASSISTANT_API_BASE_URL?.trim() || ""
+).replace(/\/$/, "");
 const ROUTING_PROXY_ENDPOINTS = Array.from(
   new Set(
     [
+      "/api/osrm-route",
       rawBackendBaseUrl ? `${rawBackendBaseUrl}/api/osrm-route` : null,
-      '/api/osrm-route',
-      PRODUCTION_ROUTING_ENDPOINT
-    ].filter(Boolean)
-  )
+    ].filter(Boolean),
+  ),
 );
 
 const fetchTomTomProxyRoute = async (waypointsStr, options = {}) => {
   const params = new URLSearchParams({ coords: waypointsStr });
   if (options.mode) {
-    params.set('mode', options.mode);
+    params.set("mode", options.mode);
   }
 
   let lastError = null;
@@ -120,7 +133,9 @@ const fetchTomTomProxyRoute = async (waypointsStr, options = {}) => {
     try {
       const response = await fetch(`${endpoint}?${params.toString()}`);
       if (!response.ok) {
-        lastError = new Error(`Proxy routing failed with status ${response.status}`);
+        lastError = new Error(
+          `Proxy routing failed with status ${response.status}`,
+        );
         continue;
       }
 
@@ -129,20 +144,20 @@ const fetchTomTomProxyRoute = async (waypointsStr, options = {}) => {
         return data;
       }
 
-      lastError = new Error('Proxy routing returned no path');
+      lastError = new Error("Proxy routing returned no path");
     } catch (error) {
       lastError = error;
     }
   }
 
-  throw lastError || new Error('Proxy routing failed');
+  throw lastError || new Error("Proxy routing failed");
 };
 
 // Function to get road-following route between waypoints
 const getProcessionRoute = async () => {
-  const palaceStart = {lat: 12.304109, lng: 76.655382};
-  const palaceEnd = {lat: 12.307085, lng: 76.655606};
-  
+  const palaceStart = { lat: 12.304109, lng: 76.655382 };
+  const palaceEnd = { lat: 12.307085, lng: 76.655606 };
+
   const palaceRoute = [];
   for (let i = 0; i <= 4; i++) {
     const ratio = i / 4;
@@ -152,26 +167,28 @@ const getProcessionRoute = async () => {
   }
 
   const roadWaypoints = [
-    {lat: 12.307085, lng: 76.655606},
-    {lat: 12.308720, lng: 76.653152},
-    {lat: 12.314528, lng: 76.651248},
-    {lat: 12.319132, lng: 76.648450},
-    {lat: 12.324061, lng: 76.645220},
-    {lat: 12.332126, lng: 76.649626},
-    {lat: 12.332424, lng: 76.654509}
+    { lat: 12.307085, lng: 76.655606 },
+    { lat: 12.30872, lng: 76.653152 },
+    { lat: 12.314528, lng: 76.651248 },
+    { lat: 12.319132, lng: 76.64845 },
+    { lat: 12.324061, lng: 76.64522 },
+    { lat: 12.332126, lng: 76.649626 },
+    { lat: 12.332424, lng: 76.654509 },
   ];
 
   try {
     const waypointsStr = roadWaypoints
-      .map(point => `${point.lng},${point.lat}`)
-      .join(';');
+      .map((point) => `${point.lng},${point.lat}`)
+      .join(";");
 
-    const { coordinates } = await fetchTomTomProxyRoute(waypointsStr, { mode: 'pedestrian' });
+    const { coordinates } = await fetchTomTomProxyRoute(waypointsStr, {
+      mode: "pedestrian",
+    });
     const roadCoordinates = coordinates.map(([lng, lat]) => [lat, lng]);
     const fullRoute = [...palaceRoute, ...roadCoordinates];
     return fullRoute;
   } catch (error) {
-    console.error('Error fetching procession route:', error);
+    console.error("Error fetching procession route:", error);
     // Fallback to original path if routing fails
     return PROCESSION_BASELINE_ROUTE;
   }
@@ -181,49 +198,87 @@ const getProcessionRoute = async () => {
 let PROCESSION_ROUTE_POINTS = PROCESSION_BASELINE_ROUTE;
 
 const PROCESSION_LANDMARKS = [
-  { id: 'mysore-palace', name: 'Mysore Palace', lat: 12.3039, lng: 76.6547, type: 'start' },
-  { id: 'albert-road', name: 'Albert Road', lat: 12.3066, lng: 76.6569, type: 'waypoint' },
-  { id: 'kr-circle', name: 'K.R. Circle', lat: 12.30889934994733, lng: 76.6529538094943, type: 'waypoint' },
-  { id: 'sayyaji-rao-road', name: 'Sayyaji Rao Road', lat: 12.3101, lng: 76.6584, type: 'waypoint' },
-  { id: 'nelson-mandela-road', name: 'Nelson Mandela Road', lat: 12.3207, lng: 76.6555, type: 'waypoint' },
-  { id: 'bannimantap-grounds', name: 'Bannimantap Grounds', lat: 12.334, lng: 76.655, type: 'end' }
+  {
+    id: "mysore-palace",
+    name: "Mysore Palace",
+    lat: 12.3039,
+    lng: 76.6547,
+    type: "start",
+  },
+  {
+    id: "albert-road",
+    name: "Albert Road",
+    lat: 12.3066,
+    lng: 76.6569,
+    type: "waypoint",
+  },
+  {
+    id: "kr-circle",
+    name: "K.R. Circle",
+    lat: 12.30889934994733,
+    lng: 76.6529538094943,
+    type: "waypoint",
+  },
+  {
+    id: "sayyaji-rao-road",
+    name: "Sayyaji Rao Road",
+    lat: 12.3101,
+    lng: 76.6584,
+    type: "waypoint",
+  },
+  {
+    id: "nelson-mandela-road",
+    name: "Nelson Mandela Road",
+    lat: 12.3207,
+    lng: 76.6555,
+    type: "waypoint",
+  },
+  {
+    id: "bannimantap-grounds",
+    name: "Bannimantap Grounds",
+    lat: 12.334,
+    lng: 76.655,
+    type: "end",
+  },
 ];
 
 const buildTomTomRasterStyle = (apiKey) => ({
   version: 8,
   sources: {
     tomtom: {
-      type: 'raster',
-      tiles: [`https://api.tomtom.com/map/1/tile/basic/main/{z}/{x}/{y}.png?key=${apiKey}`],
+      type: "raster",
+      tiles: [
+        `https://api.tomtom.com/map/1/tile/basic/main/{z}/{x}/{y}.png?key=${apiKey}`,
+      ],
       tileSize: 256,
-      attribution: '© TomTom'
-    }
+      attribution: "© TomTom",
+    },
   },
   layers: [
     {
-      id: 'tomtom-basemap',
-      type: 'raster',
-      source: 'tomtom',
+      id: "tomtom-basemap",
+      type: "raster",
+      source: "tomtom",
       minzoom: 0,
-      maxzoom: 22
-    }
-  ]
+      maxzoom: 22,
+    },
+  ],
 });
 
 const buildLineCollection = (coordinates = []) => ({
-  type: 'FeatureCollection',
+  type: "FeatureCollection",
   features: coordinates.length
     ? [
         {
-          type: 'Feature',
+          type: "Feature",
           geometry: {
-            type: 'LineString',
-            coordinates
+            type: "LineString",
+            coordinates,
           },
-          properties: {}
-        }
+          properties: {},
+        },
       ]
-    : []
+    : [],
 });
 
 const toLngLatPath = (latLngPairs = []) =>
@@ -247,13 +302,18 @@ const calculateBoundsFromLatLngPairs = (points = []) => {
     maxLng = Math.max(maxLng, lng);
   });
 
-  if (!Number.isFinite(minLat) || !Number.isFinite(minLng) || !Number.isFinite(maxLat) || !Number.isFinite(maxLng)) {
+  if (
+    !Number.isFinite(minLat) ||
+    !Number.isFinite(minLng) ||
+    !Number.isFinite(maxLat) ||
+    !Number.isFinite(maxLng)
+  ) {
     return null;
   }
 
   return [
     [minLng, minLat],
-    [maxLng, maxLat]
+    [maxLng, maxLat],
   ];
 };
 
@@ -273,34 +333,45 @@ const calculateBoundsFromLngLatPairs = (points = []) => {
     maxLng = Math.max(maxLng, lng);
   });
 
-  if (!Number.isFinite(minLat) || !Number.isFinite(minLng) || !Number.isFinite(maxLat) || !Number.isFinite(maxLng)) {
+  if (
+    !Number.isFinite(minLat) ||
+    !Number.isFinite(minLng) ||
+    !Number.isFinite(maxLat) ||
+    !Number.isFinite(maxLng)
+  ) {
     return null;
   }
 
   return [
     [minLng, minLat],
-    [maxLng, maxLat]
+    [maxLng, maxLat],
   ];
 };
 
-const escapeHtml = (value = '') =>
+const escapeHtml = (value = "") =>
   String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 
-const buildEventPopupContent = ({ event, getLocalizedEventText, getLocalizedAgeGroup, t, statusStyles }) => {
+const buildEventPopupContent = ({
+  event,
+  getLocalizedEventText,
+  getLocalizedAgeGroup,
+  t,
+  statusStyles,
+}) => {
   if (!event) {
-    return '';
+    return "";
   }
   const statusInfo = statusStyles[event.status] || statusStyles.upcoming;
   return `
     <div class="text-left space-y-1">
-      <p class="font-semibold text-[#800000]">${escapeHtml(getLocalizedEventText(event, 'name'))}</p>
-      <p class="text-xs text-gray-600">${escapeHtml(event.time || '')}</p>
-      <p class="text-[11px] text-gray-500">${escapeHtml(`${t('dayLabel')} ${event.day}`)} • ${escapeHtml(getLocalizedAgeGroup(event))}</p>
+      <p class="font-semibold text-[#800000]">${escapeHtml(getLocalizedEventText(event, "name"))}</p>
+      <p class="text-xs text-gray-600">${escapeHtml(event.time || "")}</p>
+      <p class="text-[11px] text-gray-500">${escapeHtml(`${t("dayLabel")} ${event.day}`)} • ${escapeHtml(getLocalizedAgeGroup(event))}</p>
       <span class="inline-flex items-center rounded-full bg-white/90 px-2 py-1 text-[10px] font-semibold border">${escapeHtml(statusInfo.label)}</span>
     </div>
   `;
@@ -332,16 +403,18 @@ export default function EventsMap() {
   const eventImageTags = useMemo(() => parseEventImageTagConfig(), []);
   const [userLocation, setUserLocation] = useState(null);
   const [nearestEvents, setNearestEvents] = useState([]);
-  const [permissionStatus, setPermissionStatus] = useState('prompt');
+  const [permissionStatus, setPermissionStatus] = useState("prompt");
   const [routePath, setRoutePath] = useState(null);
-  const [processionRoutePoints, setProcessionRoutePoints] = useState(PROCESSION_ROUTE_POINTS);
-  const [routingStage, setRoutingStage] = useState('idle');
+  const [processionRoutePoints, setProcessionRoutePoints] = useState(
+    PROCESSION_ROUTE_POINTS,
+  );
+  const [routingStage, setRoutingStage] = useState("idle");
   const [routingError, setRoutingError] = useState(null);
   const [activeEvent, setActiveEvent] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedDay, setSelectedDay] = useState('all');
-  const [selectedAgeGroup, setSelectedAgeGroup] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedDay, setSelectedDay] = useState("all");
+  const [selectedAgeGroup, setSelectedAgeGroup] = useState("all");
   const [processionCardPinned, setProcessionCardPinned] = useState(false);
   const [eventCardImages, setEventCardImages] = useState({});
   const [mapReady, setMapReady] = useState(false);
@@ -358,19 +431,21 @@ export default function EventsMap() {
 
   useEffect(() => {
     calculateDistances(EVENTS_DATA, null); // Initial load without user location
-    
+
     // Fetch road-following procession route
-    getProcessionRoute().then(roadPoints => {
-      if (roadPoints && roadPoints.length > 0) {
-        setProcessionRoutePoints(roadPoints);
-      }
-    }).catch(error => {
-      console.error('Failed to load procession route:', error);
-    });
+    getProcessionRoute()
+      .then((roadPoints) => {
+        if (roadPoints && roadPoints.length > 0) {
+          setProcessionRoutePoints(roadPoints);
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to load procession route:", error);
+      });
   }, []);
 
   useEffect(() => {
-    if (typeof ResizeObserver === 'undefined') {
+    if (typeof ResizeObserver === "undefined") {
       return undefined;
     }
 
@@ -386,20 +461,20 @@ export default function EventsMap() {
       if (!mapContainerRef.current) return;
 
       if (width < 400) {
-        mapContainerRef.current.style.minHeight = '280px';
+        mapContainerRef.current.style.minHeight = "280px";
       } else if (width < 640) {
-        mapContainerRef.current.style.minHeight = '340px';
+        mapContainerRef.current.style.minHeight = "340px";
       } else if (width < 768) {
-        mapContainerRef.current.style.minHeight = '380px';
+        mapContainerRef.current.style.minHeight = "380px";
       } else if (width < 1024) {
-        mapContainerRef.current.style.minHeight = '420px';
+        mapContainerRef.current.style.minHeight = "420px";
       } else {
-        mapContainerRef.current.style.minHeight = '480px';
+        mapContainerRef.current.style.minHeight = "480px";
       }
     });
 
     if (mapContainerRef.current) {
-      mapContainerRef.current.style.minHeight = '480px';
+      mapContainerRef.current.style.minHeight = "480px";
       resizeObserver.observe(mapContainerRef.current);
     }
 
@@ -407,7 +482,7 @@ export default function EventsMap() {
   }, []);
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
+    if (typeof window === "undefined") {
       return undefined;
     }
 
@@ -416,7 +491,9 @@ export default function EventsMap() {
       return undefined;
     }
 
-    const entries = Object.entries(eventImageTags).filter(([, tag]) => Boolean(tag));
+    const entries = Object.entries(eventImageTags).filter(([, tag]) =>
+      Boolean(tag),
+    );
     if (!entries.length) {
       setEventCardImages({});
       return undefined;
@@ -434,7 +511,7 @@ export default function EventsMap() {
         };
         localStorage.setItem(IMAGE_CACHE_STORAGE_KEY, JSON.stringify(payload));
       } catch (error) {
-        console.warn('Unable to persist event image cache', error);
+        console.warn("Unable to persist event image cache", error);
       }
     };
 
@@ -445,20 +522,23 @@ export default function EventsMap() {
           return;
         }
         const parsed = JSON.parse(raw);
-        if (!parsed?.data || typeof parsed.data !== 'object') {
+        if (!parsed?.data || typeof parsed.data !== "object") {
           return;
         }
-        if (parsed.timestamp && Date.now() - parsed.timestamp > IMAGE_CACHE_TTL_MS) {
+        if (
+          parsed.timestamp &&
+          Date.now() - parsed.timestamp > IMAGE_CACHE_TTL_MS
+        ) {
           localStorage.removeItem(IMAGE_CACHE_STORAGE_KEY);
           return;
         }
         Object.entries(parsed.data).forEach(([tag, url]) => {
-          if (typeof tag === 'string' && typeof url === 'string') {
+          if (typeof tag === "string" && typeof url === "string") {
             cache.set(tag, url);
           }
         });
       } catch (error) {
-        console.warn('Unable to read event image cache', error);
+        console.warn("Unable to read event image cache", error);
       }
     };
 
@@ -468,12 +548,12 @@ export default function EventsMap() {
       if (!publicId) {
         return null;
       }
-      const extension = format ? `.${format}` : '';
+      const extension = format ? `.${format}` : "";
       return `https://res.cloudinary.com/${cloudName}/image/upload/f_auto,q_auto,w_900,h_500,c_fill/${publicId}${extension}`;
     };
 
     const fetchByTag = async (tag) => {
-      const normalizedTag = String(tag || '').trim();
+      const normalizedTag = String(tag || "").trim();
       if (!normalizedTag) {
         return null;
       }
@@ -493,7 +573,9 @@ export default function EventsMap() {
         const response = await fetch(manifestUrl);
         if (response.ok) {
           const data = await response.json();
-          const resource = Array.isArray(data?.resources) ? data.resources[0] : null;
+          const resource = Array.isArray(data?.resources)
+            ? data.resources[0]
+            : null;
           if (resource?.public_id) {
             const url = buildImageUrl(resource.public_id, resource.format);
             cache.set(normalizedTag, url);
@@ -502,7 +584,11 @@ export default function EventsMap() {
           }
         }
       } catch (error) {
-        console.warn('Unable to fetch Cloudinary tag manifest', normalizedTag, error);
+        console.warn(
+          "Unable to fetch Cloudinary tag manifest",
+          normalizedTag,
+          error,
+        );
       }
 
       const fallbackUrl = buildImageUrl(normalizedTag);
@@ -514,7 +600,7 @@ export default function EventsMap() {
     const seedImagesFromCache = () => {
       const cached = {};
       entries.forEach(([eventId, tag]) => {
-        const normalizedTag = String(tag || '').trim();
+        const normalizedTag = String(tag || "").trim();
         if (!normalizedTag) {
           return;
         }
@@ -532,10 +618,12 @@ export default function EventsMap() {
     seedImagesFromCache();
 
     const resolveImages = async () => {
-      const results = await Promise.all(entries.map(async ([eventId, tag]) => {
-        const url = await fetchByTag(tag);
-        return [eventId, url];
-      }));
+      const results = await Promise.all(
+        entries.map(async ([eventId, tag]) => {
+          const url = await fetchByTag(tag);
+          return [eventId, url];
+        }),
+      );
 
       if (cancelled) {
         return;
@@ -563,7 +651,7 @@ export default function EventsMap() {
     }
 
     if (!browserTomTomKey) {
-      setMapInitError('missing-key');
+      setMapInitError("missing-key");
       return undefined;
     }
 
@@ -577,54 +665,66 @@ export default function EventsMap() {
       style: buildTomTomRasterStyle(browserTomTomKey),
       center: [76.6551, 12.3051],
       zoom: 13,
-      attributionControl: false
+      attributionControl: false,
     });
 
-    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
-    map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
+    map.addControl(
+      new maplibregl.NavigationControl({ visualizePitch: true }),
+      "top-right",
+    );
+    map.addControl(
+      new maplibregl.AttributionControl({ compact: true }),
+      "bottom-right",
+    );
 
     const handleLoad = () => {
-      if (!map.getSource('procession-route')) {
-        map.addSource('procession-route', { type: 'geojson', data: buildLineCollection() });
+      if (!map.getSource("procession-route")) {
+        map.addSource("procession-route", {
+          type: "geojson",
+          data: buildLineCollection(),
+        });
       }
-      if (!map.getLayer('procession-route')) {
+      if (!map.getLayer("procession-route")) {
         map.addLayer({
-          id: 'procession-route',
-          type: 'line',
-          source: 'procession-route',
+          id: "procession-route",
+          type: "line",
+          source: "procession-route",
           paint: {
-            'line-color': '#EA580C',
-            'line-width': 6,
-            'line-opacity': 0.9,
-            'line-dasharray': [1.2, 1.2]
-          }
+            "line-color": "#EA580C",
+            "line-width": 6,
+            "line-opacity": 0.9,
+            "line-dasharray": [1.2, 1.2],
+          },
         });
       }
 
-      if (!map.getSource('user-route')) {
-        map.addSource('user-route', { type: 'geojson', data: buildLineCollection() });
+      if (!map.getSource("user-route")) {
+        map.addSource("user-route", {
+          type: "geojson",
+          data: buildLineCollection(),
+        });
       }
-      if (!map.getLayer('user-route')) {
+      if (!map.getLayer("user-route")) {
         map.addLayer({
-          id: 'user-route',
-          type: 'line',
-          source: 'user-route',
+          id: "user-route",
+          type: "line",
+          source: "user-route",
           paint: {
-            'line-color': '#1D4ED8',
-            'line-width': 4,
-            'line-opacity': 0.95
-          }
+            "line-color": "#1D4ED8",
+            "line-width": 4,
+            "line-opacity": 0.95,
+          },
         });
       }
 
       setMapReady(true);
     };
 
-    map.on('load', handleLoad);
+    map.on("load", handleLoad);
     mapRef.current = map;
 
     return () => {
-      map.off('load', handleLoad);
+      map.off("load", handleLoad);
       eventMarkersRef.current.forEach((marker) => marker.remove());
       eventMarkersRef.current.clear();
       processionMarkersRef.current.forEach((marker) => marker.remove());
@@ -644,7 +744,7 @@ export default function EventsMap() {
       return;
     }
     const map = mapRef.current;
-    const source = map.getSource('procession-route');
+    const source = map.getSource("procession-route");
     if (!source) {
       return;
     }
@@ -657,14 +757,13 @@ export default function EventsMap() {
       return;
     }
     const map = mapRef.current;
-    const source = map.getSource('user-route');
+    const source = map.getSource("user-route");
     if (!source) {
       return;
     }
     const coordinates = Array.isArray(routePath) ? routePath : [];
     source.setData(buildLineCollection(coordinates));
   }, [mapReady, routePath]);
-
 
   useEffect(() => {
     if (!mapReady || !mapRef.current) {
@@ -681,11 +780,18 @@ export default function EventsMap() {
     }
 
     if (!userMarkerRef.current) {
-      userMarkerRef.current = new maplibregl.Marker({ color: '#2563EB' })
-        .setPopup(new maplibregl.Popup({ offset: 10 }).setText(t('youAreHere') || 'You are here'));
+      userMarkerRef.current = new maplibregl.Marker({
+        color: "#2563EB",
+      }).setPopup(
+        new maplibregl.Popup({ offset: 10 }).setText(
+          t("youAreHere") || "You are here",
+        ),
+      );
     }
 
-    userMarkerRef.current.setLngLat([userLocation.lng, userLocation.lat]).addTo(map);
+    userMarkerRef.current
+      .setLngLat([userLocation.lng, userLocation.lat])
+      .addTo(map);
   }, [mapReady, userLocation, t]);
 
   useEffect(() => {
@@ -697,20 +803,26 @@ export default function EventsMap() {
     const markers = processionMarkersRef.current;
     const trackedIds = new Set();
 
-    PROCESSION_LANDMARKS.filter((landmark) => landmark.type === 'start' || landmark.type === 'end').forEach((landmark) => {
+    PROCESSION_LANDMARKS.filter(
+      (landmark) => landmark.type === "start" || landmark.type === "end",
+    ).forEach((landmark) => {
       trackedIds.add(landmark.id);
       const popupHtml = `
         <div class="text-sm text-center space-y-1">
           <p class="font-semibold text-[#B45309]">${escapeHtml(landmark.name)}</p>
           <p class="text-[11px] text-gray-600">${escapeHtml(
-            landmark.type === 'start' ? t('processionStartingPoint') : t('processionEndingPoint')
+            landmark.type === "start"
+              ? t("processionStartingPoint")
+              : t("processionEndingPoint"),
           )}</p>
         </div>
       `;
 
       let marker = markers.get(landmark.id);
       if (!marker) {
-        marker = new maplibregl.Marker({ color: landmark.type === 'start' ? '#1D4ED8' : '#7C3AED' })
+        marker = new maplibregl.Marker({
+          color: landmark.type === "start" ? "#1D4ED8" : "#7C3AED",
+        })
           .setLngLat([landmark.lng, landmark.lat])
           .setPopup(new maplibregl.Popup({ offset: 10 }).setHTML(popupHtml))
           .addTo(map);
@@ -738,46 +850,46 @@ export default function EventsMap() {
           const { latitude, longitude } = position.coords;
           const userLoc = { lat: latitude, lng: longitude };
           setUserLocation(userLoc);
-          setPermissionStatus('granted');
+          setPermissionStatus("granted");
           calculateDistances(EVENTS_DATA, userLoc);
           setRoutePath(null);
-          setRoutingStage('idle');
+          setRoutingStage("idle");
           setRoutingError(null);
           setActiveEvent(null);
-          
+
           // Fly to user location
           if (mapRef.current) {
             mapRef.current.flyTo({
               center: [longitude, latitude],
               zoom: 14,
-              essential: true
+              essential: true,
             });
           }
 
-          if (typeof onSuccess === 'function') {
+          if (typeof onSuccess === "function") {
             onSuccess(userLoc);
           }
         },
         (error) => {
           console.error("Error getting location:", error);
-          setPermissionStatus('denied');
+          setPermissionStatus("denied");
           if (pendingRouteRef.current) {
-            setRoutingStage('error');
-            setRoutingError(t('routeNeedLocation'));
+            setRoutingStage("error");
+            setRoutingError(t("routeNeedLocation"));
             pendingRouteRef.current = null;
           }
         },
         {
           enableHighAccuracy: true,
           timeout: 10000,
-          maximumAge: 0
-        }
+          maximumAge: 0,
+        },
       );
     } else {
-      setPermissionStatus('denied');
+      setPermissionStatus("denied");
       if (pendingRouteRef.current) {
-        setRoutingStage('error');
-        setRoutingError(t('routeNeedLocation'));
+        setRoutingStage("error");
+        setRoutingError(t("routeNeedLocation"));
         pendingRouteRef.current = null;
       }
     }
@@ -788,7 +900,12 @@ export default function EventsMap() {
       if (!userLoc) {
         return { ...event, distance: undefined };
       }
-      const dist = getDistanceFromLatLonInKm(userLoc.lat, userLoc.lng, event.lat, event.lng);
+      const dist = getDistanceFromLatLonInKm(
+        userLoc.lat,
+        userLoc.lng,
+        event.lat,
+        event.lng,
+      );
       return { ...event, distance: dist };
     });
 
@@ -800,23 +917,28 @@ export default function EventsMap() {
     var R = 6371; // Radius of the earth in km
     var dLat = deg2rad(lat2 - lat1);
     var dLon = deg2rad(lon2 - lon1);
-    var a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2)
-      ; 
-    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    var a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(deg2rad(lat1)) *
+        Math.cos(deg2rad(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     var d = R * c; // Distance in km
     return d;
   }
 
   const categories = useMemo(() => {
-    const unique = Array.from(new Set(EVENTS_DATA.map((event) => event.category).filter(Boolean)));
+    const unique = Array.from(
+      new Set(EVENTS_DATA.map((event) => event.category).filter(Boolean)),
+    );
     return unique.sort();
   }, []);
 
   const ageGroups = useMemo(() => {
-    const unique = Array.from(new Set(EVENTS_DATA.map((event) => event.ageGroup).filter(Boolean)));
+    const unique = Array.from(
+      new Set(EVENTS_DATA.map((event) => event.ageGroup).filter(Boolean)),
+    );
     return unique.sort();
   }, []);
 
@@ -833,49 +955,59 @@ export default function EventsMap() {
     }, {});
   }, []);
 
-  const dayOptions = useMemo(() => Array.from({ length: 10 }, (_, index) => index + 1), []);
+  const dayOptions = useMemo(
+    () => Array.from({ length: 10 }, (_, index) => index + 1),
+    [],
+  );
 
-  const getLocalizedEventText = useCallback((event, key) => {
-    if (!event) {
-      return '';
-    }
-    if (language === 'kn') {
-      return event[`${key}_kn`] || event[key] || '';
-    }
-    if (language === 'hi') {
-      return event[`${key}_hi`] || event[key] || '';
-    }
-    return event[key] || '';
-  }, [language]);
+  const getLocalizedEventText = useCallback(
+    (event, key) => {
+      if (!event) {
+        return "";
+      }
+      if (language === "kn") {
+        return event[`${key}_kn`] || event[key] || "";
+      }
+      if (language === "hi") {
+        return event[`${key}_hi`] || event[key] || "";
+      }
+      return event[key] || "";
+    },
+    [language],
+  );
 
-  const getLocalizedAgeGroup = useCallback((event) => {
-    if (!event) {
-      return '';
-    }
-    if (language === 'kn') {
-      return event.ageGroup_kn || event.ageGroup || '';
-    }
-    if (language === 'hi') {
-      return event.ageGroup_hi || event.ageGroup || '';
-    }
-    return event.ageGroup || '';
-  }, [language]);
+  const getLocalizedAgeGroup = useCallback(
+    (event) => {
+      if (!event) {
+        return "";
+      }
+      if (language === "kn") {
+        return event.ageGroup_kn || event.ageGroup || "";
+      }
+      if (language === "hi") {
+        return event.ageGroup_hi || event.ageGroup || "";
+      }
+      return event.ageGroup || "";
+    },
+    [language],
+  );
 
-  const toSearchableText = (value) => (typeof value === 'string' ? value.toLowerCase() : '');
+  const toSearchableText = (value) =>
+    typeof value === "string" ? value.toLowerCase() : "";
 
   const filteredEvents = useMemo(() => {
     let list = Array.isArray(nearestEvents) ? nearestEvents : [];
 
-    if (selectedCategory !== 'all') {
+    if (selectedCategory !== "all") {
       list = list.filter((event) => event.category === selectedCategory);
     }
 
-    if (selectedDay !== 'all') {
+    if (selectedDay !== "all") {
       const dayValue = Number(selectedDay);
       list = list.filter((event) => event.day === dayValue);
     }
 
-    if (selectedAgeGroup !== 'all') {
+    if (selectedAgeGroup !== "all") {
       list = list.filter((event) => event.ageGroup === selectedAgeGroup);
     }
 
@@ -885,10 +1017,10 @@ export default function EventsMap() {
 
     const term = searchTerm.trim().toLowerCase();
     return list.filter((event) => {
-      const name = getLocalizedEventText(event, 'name');
-      const category = event.category || '';
+      const name = getLocalizedEventText(event, "name");
+      const category = event.category || "";
       const ageGroup = getLocalizedAgeGroup(event);
-      const dayText = String(event?.day ?? '');
+      const dayText = String(event?.day ?? "");
       const normalizedName = toSearchableText(name);
       const normalizedCategory = toSearchableText(category);
       const normalizedAgeGroup = toSearchableText(ageGroup);
@@ -899,24 +1031,37 @@ export default function EventsMap() {
         dayText.includes(term)
       );
     });
-  }, [nearestEvents, searchTerm, language, selectedCategory, selectedDay, selectedAgeGroup]);
+  }, [
+    nearestEvents,
+    searchTerm,
+    language,
+    selectedCategory,
+    selectedDay,
+    selectedAgeGroup,
+  ]);
 
-  const hasActiveFilters = selectedCategory !== 'all' || selectedDay !== 'all' || selectedAgeGroup !== 'all';
+  const hasActiveFilters =
+    selectedCategory !== "all" ||
+    selectedDay !== "all" ||
+    selectedAgeGroup !== "all";
 
-  const statusStyles = useMemo(() => ({
-    live: {
-      label: t('statusLive'),
-      className: 'bg-green-100 text-green-700 border-green-200'
-    },
-    upcoming: {
-      label: t('statusUpcoming'),
-      className: 'bg-blue-100 text-blue-700 border-blue-200'
-    },
-    completed: {
-      label: t('statusCompleted'),
-      className: 'bg-gray-100 text-gray-600 border-gray-200'
-    }
-  }), [t, language]);
+  const statusStyles = useMemo(
+    () => ({
+      live: {
+        label: t("statusLive"),
+        className: "bg-green-100 text-green-700 border-green-200",
+      },
+      upcoming: {
+        label: t("statusUpcoming"),
+        className: "bg-blue-100 text-blue-700 border-blue-200",
+      },
+      completed: {
+        label: t("statusCompleted"),
+        className: "bg-gray-100 text-gray-600 border-gray-200",
+      },
+    }),
+    [t, language],
+  );
 
   useEffect(() => {
     if (!mapReady || !mapRef.current) {
@@ -935,12 +1080,12 @@ export default function EventsMap() {
         getLocalizedEventText,
         getLocalizedAgeGroup,
         t,
-        statusStyles
+        statusStyles,
       });
 
       let marker = markers.get(markerId);
       if (!marker) {
-        marker = new maplibregl.Marker({ color: '#B45309' })
+        marker = new maplibregl.Marker({ color: "#B45309" })
           .setLngLat([event.lng, event.lat])
           .setPopup(new maplibregl.Popup({ offset: 12 }).setHTML(popupContent))
           .addTo(map);
@@ -959,12 +1104,19 @@ export default function EventsMap() {
         markers.delete(markerId);
       }
     });
-  }, [filteredEvents, mapReady, getLocalizedEventText, getLocalizedAgeGroup, statusStyles, t]);
+  }, [
+    filteredEvents,
+    mapReady,
+    getLocalizedEventText,
+    getLocalizedAgeGroup,
+    statusStyles,
+    t,
+  ]);
 
   const handleDirections = async (event, overrideLocation = null) => {
     const currentLocation = overrideLocation || userLocation;
     if (!currentLocation) {
-      setRoutingStage('loading');
+      setRoutingStage("loading");
       setRoutingError(null);
       setActiveEvent(event);
       pendingRouteRef.current = event;
@@ -979,41 +1131,46 @@ export default function EventsMap() {
     }
 
     setActiveEvent(event);
-    setRoutingStage('loading');
+    setRoutingStage("loading");
     setRoutingError(null);
     setRoutePath(null);
 
     try {
       const waypointsStr = `${currentLocation.lng},${currentLocation.lat};${event.lng},${event.lat}`;
-      const { coordinates } = await fetchTomTomProxyRoute(waypointsStr, { mode: 'pedestrian' });
+      const { coordinates } = await fetchTomTomProxyRoute(waypointsStr, {
+        mode: "pedestrian",
+      });
 
       setRoutePath(coordinates);
-      setRoutingStage('success');
+      setRoutingStage("success");
 
       if (mapRef.current && coordinates.length) {
-        fitMapToLngLatPairs(mapRef.current, coordinates, { padding: 48, maxZoom: 16 });
+        fitMapToLngLatPairs(mapRef.current, coordinates, {
+          padding: 48,
+          maxZoom: 16,
+        });
       }
     } catch (error) {
-      console.error('Routing error:', error);
-      setRoutingStage('error');
-      setRoutingError(t('routeUnavailable'));
+      console.error("Routing error:", error);
+      setRoutingStage("error");
+      setRoutingError(t("routeUnavailable"));
       setRoutePath(null);
     }
   };
 
   function deg2rad(deg) {
-    return deg * (Math.PI/180)
+    return deg * (Math.PI / 180);
   }
 
   return (
     <section id="events" className="py-12 md:py-20 bg-white">
       <div className="container mx-auto px-4">
-        {!userLocation && permissionStatus !== 'denied' && (
+        {!userLocation && permissionStatus !== "denied" && (
           <div className="max-w-2xl mx-auto mb-6">
             <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex flex-col gap-3 text-left shadow-sm md:flex-row md:items-center md:justify-between">
               <p className="text-sm text-yellow-800 flex items-center gap-2">
                 <Info className="w-4 h-4" />
-                {t('enableLocation')}
+                {t("enableLocation")}
               </p>
               <Button
                 size="sm"
@@ -1034,19 +1191,27 @@ export default function EventsMap() {
                 type="text"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder={t('searchPlaceholder')}
+                placeholder={t("searchPlaceholder")}
                 className="w-full border-none focus:outline-none focus:ring-0 text-sm md:text-base"
               />
               {searchTerm && (
-                <Button variant="ghost" size="sm" className="text-[#800000]" onClick={() => setSearchTerm('')}>
-                  {t('clearSearch')}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-[#800000]"
+                  onClick={() => setSearchTerm("")}
+                >
+                  {t("clearSearch")}
                 </Button>
               )}
             </div>
             <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-sm">
               <div className="flex items-center gap-2">
-                <label htmlFor="categoryFilter" className="font-medium text-[#800000]">
-                  {t('categoryFilterLabel')}
+                <label
+                  htmlFor="categoryFilter"
+                  className="font-medium text-[#800000]"
+                >
+                  {t("categoryFilterLabel")}
                 </label>
                 <select
                   id="categoryFilter"
@@ -1054,15 +1219,20 @@ export default function EventsMap() {
                   onChange={(event) => setSelectedCategory(event.target.value)}
                   className="border border-[#DAA520]/60 rounded-full px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#DAA520]/70 text-sm"
                 >
-                  <option value="all">{t('allCategories')}</option>
+                  <option value="all">{t("allCategories")}</option>
                   {categories.map((category) => (
-                    <option key={category} value={category}>{category}</option>
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
                   ))}
                 </select>
               </div>
               <div className="flex items-center gap-2">
-                <label htmlFor="dayFilter" className="font-medium text-[#800000]">
-                  {t('dayFilterLabel')}
+                <label
+                  htmlFor="dayFilter"
+                  className="font-medium text-[#800000]"
+                >
+                  {t("dayFilterLabel")}
                 </label>
                 <select
                   id="dayFilter"
@@ -1070,17 +1240,20 @@ export default function EventsMap() {
                   onChange={(event) => setSelectedDay(event.target.value)}
                   className="border border-[#DAA520]/60 rounded-full px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#DAA520]/70 text-sm"
                 >
-                  <option value="all">{t('allDays')}</option>
+                  <option value="all">{t("allDays")}</option>
                   {dayOptions.map((day) => (
                     <option key={day} value={String(day)}>
-                      {`${t('dayLabel')} ${day}`}
+                      {`${t("dayLabel")} ${day}`}
                     </option>
                   ))}
                 </select>
               </div>
               <div className="flex items-center gap-2">
-                <label htmlFor="ageGroupFilter" className="font-medium text-[#800000]">
-                  {t('ageFilterLabel')}
+                <label
+                  htmlFor="ageGroupFilter"
+                  className="font-medium text-[#800000]"
+                >
+                  {t("ageFilterLabel")}
                 </label>
                 <select
                   id="ageGroupFilter"
@@ -1088,12 +1261,12 @@ export default function EventsMap() {
                   onChange={(event) => setSelectedAgeGroup(event.target.value)}
                   className="border border-[#DAA520]/60 rounded-full px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#DAA520]/70 text-sm"
                 >
-                  <option value="all">{t('allAgeGroups')}</option>
+                  <option value="all">{t("allAgeGroups")}</option>
                   {ageGroups.map((group) => (
                     <option key={group} value={group}>
-                      {language === 'kn'
+                      {language === "kn"
                         ? ageGroupLabels[group]?.kn || group
-                        : language === 'hi'
+                        : language === "hi"
                           ? ageGroupLabels[group]?.hi || group
                           : ageGroupLabels[group]?.en || group}
                     </option>
@@ -1107,23 +1280,36 @@ export default function EventsMap() {
         <div className="space-y-8">
           <div className="relative" id="event-cards">
             <div className="mb-6">
-              <h2 className="text-2xl font-semibold text-[#800000]">Plan Your Dasara Day</h2>
-              <p className="text-sm text-gray-600">Swipe through the highlighted events and tap “Get Directions” to pin them on the map.</p>
+              <h2 className="text-2xl font-semibold text-[#800000]">
+                Plan Your Dasara Day
+              </h2>
+              <p className="text-sm text-gray-600">
+                Swipe through the highlighted events and tap “Get Directions” to
+                pin them on the map.
+              </p>
             </div>
             {filteredEvents.length === 0 ? (
               <div className="h-64 flex flex-col items-center justify-center text-gray-400 text-sm border-2 border-dashed rounded-xl p-6">
                 {searchTerm ? (
                   <>
-                    <p className="font-medium text-[#800000]">{t('noSearchResults')} “{searchTerm}”.</p>
-                    <p className="mt-2 text-center text-gray-500">{t('searchHint')}</p>
+                    <p className="font-medium text-[#800000]">
+                      {t("noSearchResults")} “{searchTerm}”.
+                    </p>
+                    <p className="mt-2 text-center text-gray-500">
+                      {t("searchHint")}
+                    </p>
                   </>
                 ) : hasActiveFilters ? (
                   <>
-                    <p className="font-medium text-[#800000]">{t('noFilterResults')}</p>
-                    <p className="mt-2 text-center text-gray-500">{t('searchHint')}</p>
+                    <p className="font-medium text-[#800000]">
+                      {t("noFilterResults")}
+                    </p>
+                    <p className="mt-2 text-center text-gray-500">
+                      {t("searchHint")}
+                    </p>
                   </>
                 ) : (
-                  <p className="font-medium text-[#800000]">{t('noEvents')}</p>
+                  <p className="font-medium text-[#800000]">{t("noEvents")}</p>
                 )}
               </div>
             ) : (
@@ -1133,7 +1319,9 @@ export default function EventsMap() {
                   className="flex gap-5 overflow-x-auto pb-8 horizontal-scroll snap-x snap-mandatory"
                 >
                   {filteredEvents.map((event) => {
-                    const imageUrl = eventCardImages[event.id] || eventCardImages[String(event.id)];
+                    const imageUrl =
+                      eventCardImages[event.id] ||
+                      eventCardImages[String(event.id)];
                     return (
                       <Card
                         key={event.id}
@@ -1141,36 +1329,48 @@ export default function EventsMap() {
                       >
                         <div
                           className="h-48 relative"
-                          style={imageUrl ? {
-                            backgroundImage: `url(${imageUrl})`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center'
-                          } : undefined}
+                          style={
+                            imageUrl
+                              ? {
+                                  backgroundImage: `url(${imageUrl})`,
+                                  backgroundSize: "cover",
+                                  backgroundPosition: "center",
+                                }
+                              : undefined
+                          }
                         >
-                          <div className={`absolute inset-0 ${imageUrl ? 'bg-black/10' : 'bg-gradient-to-br from-[#4B1D14] via-[#8C3B16] to-[#D97706]'}`} />
+                          <div
+                            className={`absolute inset-0 ${imageUrl ? "bg-black/10" : "bg-gradient-to-br from-[#4B1D14] via-[#8C3B16] to-[#D97706]"}`}
+                          />
                           <div className="absolute bottom-4 left-5 right-5 text-white">
-                            <p className="text-xs uppercase tracking-widest opacity-80 mb-1">{event.category}</p>
+                            <p className="text-xs uppercase tracking-widest opacity-80 mb-1">
+                              {event.category}
+                            </p>
                             <h3 className="text-2xl font-bold leading-tight drop-shadow-lg">
-                              {getLocalizedEventText(event, 'name')}
+                              {getLocalizedEventText(event, "name")}
                             </h3>
                           </div>
                         </div>
                         <CardContent className="p-5 bg-white flex flex-col flex-1">
                           <div className="space-y-4">
                             <p className="text-sm text-gray-600 leading-relaxed line-clamp-3 min-h-[72px]">
-                              {getLocalizedEventText(event, 'description')}
+                              {getLocalizedEventText(event, "description")}
                             </p>
                             <div className="flex flex-wrap items-center gap-2 text-xs">
                               <Badge className="bg-[#800000]/10 text-[#800000] border-transparent">
-                                {`${t('dayLabel')} ${event.day}`}
+                                {`${t("dayLabel")} ${event.day}`}
                               </Badge>
                               <Badge className="bg-[#DAA520]/10 text-[#8B7500] border-transparent">
                                 {getLocalizedAgeGroup(event)}
                               </Badge>
                               {(() => {
-                                const statusInfo = statusStyles[event.status] || statusStyles.upcoming;
+                                const statusInfo =
+                                  statusStyles[event.status] ||
+                                  statusStyles.upcoming;
                                 return (
-                                  <Badge className={`border ${statusInfo.className}`}>
+                                  <Badge
+                                    className={`border ${statusInfo.className}`}
+                                  >
                                     {statusInfo.label}
                                   </Badge>
                                 );
@@ -1199,16 +1399,17 @@ export default function EventsMap() {
                                   mapRef.current.flyTo({
                                     center: [event.lng, event.lat],
                                     zoom: 16,
-                                    essential: true
+                                    essential: true,
                                   });
                                 }
                                 handleDirections(event);
                               }}
-                              disabled={routingStage === 'loading'}
+                              disabled={routingStage === "loading"}
                             >
-                              {routingStage === 'loading' && activeEvent?.id === event.id
-                                ? t('routeFetching')
-                                : t('directions')}
+                              {routingStage === "loading" &&
+                              activeEvent?.id === event.id
+                                ? t("routeFetching")
+                                : t("directions")}
                             </Button>
                           </div>
                         </CardContent>
@@ -1229,18 +1430,18 @@ export default function EventsMap() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className={`flex items-center gap-2 border-[#F97316]/60 text-[#B45309] bg-white/90 ${processionCardPinned ? '' : 'shadow-lg'}`}
+                  className={`flex items-center gap-2 border-[#F97316]/60 text-[#B45309] bg-white/90 ${processionCardPinned ? "" : "shadow-lg"}`}
                   onClick={() => setProcessionCardPinned((prev) => !prev)}
                 >
                   {processionCardPinned ? (
                     <>
                       <MapIcon className="w-4 h-4" />
-                      {t('processionCardMapView')}
+                      {t("processionCardMapView")}
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4" />
-                      {t('processionCardShow')}
+                      {t("processionCardShow")}
                     </>
                   )}
                 </Button>
@@ -1250,14 +1451,18 @@ export default function EventsMap() {
               <div
                 className={`absolute right-4 top-20 w-72 bg-white/95 border border-orange-200 rounded-xl shadow-lg p-4 space-y-3 transition-all duration-200 ${
                   processionCardPinned
-                    ? 'z-[1000] opacity-100 pointer-events-auto translate-y-0'
-                    : 'z-[10] opacity-0 pointer-events-none translate-y-2'
+                    ? "z-[1000] opacity-100 pointer-events-auto translate-y-0"
+                    : "z-[10] opacity-0 pointer-events-none translate-y-2"
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm font-semibold text-[#B45309]">{t('processionRouteTitle')}</p>
-                    <p className="text-[11px] text-gray-600">{t('processionRouteSubtitle')}</p>
+                    <p className="text-sm font-semibold text-[#B45309]">
+                      {t("processionRouteTitle")}
+                    </p>
+                    <p className="text-[11px] text-gray-600">
+                      {t("processionRouteSubtitle")}
+                    </p>
                   </div>
                   <Button
                     variant="outline"
@@ -1265,33 +1470,43 @@ export default function EventsMap() {
                     className="text-[#B45309] border-[#F97316]/70 hover:bg-[#F97316]/15"
                     onClick={() => {
                       if (mapRef.current && processionRoutePoints.length) {
-                        fitMapToLatLngPairs(mapRef.current, processionRoutePoints, { padding: 36, maxZoom: 15 });
+                        fitMapToLatLngPairs(
+                          mapRef.current,
+                          processionRoutePoints,
+                          { padding: 36, maxZoom: 15 },
+                        );
                       }
                     }}
                   >
-                    {t('processionFocusCta')}
+                    {t("processionFocusCta")}
                   </Button>
                 </div>
                 <div>
                   <p className="text-[11px] uppercase tracking-wide text-gray-500 font-semibold">
-                    {t('processionStopsHeading')}
+                    {t("processionStopsHeading")}
                   </p>
                   <ol className="mt-2 space-y-2 text-xs text-gray-700 list-decimal pl-5">
                     {PROCESSION_LANDMARKS.map((landmark) => (
                       <li key={landmark.id} className="leading-tight">
-                        <p className="font-semibold text-gray-800">{landmark.name}</p>
-                        {landmark.type === 'start' && (
-                          <p className="text-[11px] text-green-600">{t('processionStartingPoint')}</p>
+                        <p className="font-semibold text-gray-800">
+                          {landmark.name}
+                        </p>
+                        {landmark.type === "start" && (
+                          <p className="text-[11px] text-green-600">
+                            {t("processionStartingPoint")}
+                          </p>
                         )}
-                        {landmark.type === 'end' && (
-                          <p className="text-[11px] text-purple-600">{t('processionEndingPoint')}</p>
+                        {landmark.type === "end" && (
+                          <p className="text-[11px] text-purple-600">
+                            {t("processionEndingPoint")}
+                          </p>
                         )}
                       </li>
                     ))}
                   </ol>
                 </div>
                 <p className="rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2 text-[11px] font-semibold text-amber-900">
-                  {t('footerPlanTip')}
+                  {t("footerPlanTip")}
                 </p>
               </div>
             )}
@@ -1305,27 +1520,29 @@ export default function EventsMap() {
             {mapInitError && (
               <div className="absolute inset-0 z-[1200] flex flex-col items-center justify-center gap-2 bg-white/95 px-6 text-center">
                 <p className="text-sm font-semibold text-[#800000]">
-                  {t('mapKeyMissing') || 'TomTom map key missing'}
+                  {t("mapKeyMissing") || "TomTom map key missing"}
                 </p>
                 <p className="text-xs text-gray-500">
-                  {t('mapKeyMissingHint') || 'Set VITE_TOMTOM_API_KEY to load the festival map.'}
+                  {t("mapKeyMissingHint") ||
+                    "Set VITE_TOMTOM_API_KEY to load the festival map."}
                 </p>
               </div>
             )}
 
-            {routingStage === 'loading' && (
+            {routingStage === "loading" && (
               <div className="absolute left-4 right-4 bottom-4 z-[1200] bg-white/90 backdrop-blur-sm border border-yellow-200 rounded-lg p-4 shadow-lg flex items-center gap-3">
                 <RefreshCw className="w-5 h-5 text-[#800000] animate-spin" />
-                <p className="text-sm text-[#800000] font-medium">{t('routeFetching')}</p>
+                <p className="text-sm text-[#800000] font-medium">
+                  {t("routeFetching")}
+                </p>
               </div>
             )}
 
-            {routingStage === 'error' && routingError && (
+            {routingStage === "error" && routingError && (
               <div className="absolute left-4 right-4 bottom-4 z-[1200] bg-white/95 border border-red-200 text-red-700 rounded-lg p-4 shadow-lg text-sm">
                 {routingError}
               </div>
             )}
-
           </div>
         </div>
       </div>
