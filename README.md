@@ -26,27 +26,27 @@ It bridges the gap between tradition and technology by offering a fully bilingua
 
 ## Key Features
 
-| Feature | Description |
-|---------|-------------|
-| **Interactive Event Map** | Pinpoint major venues, calculate distances from your live location, and get instant navigation cues using MapLibre GL |
-| **Smart Transport Planner** | Compare travel options (Bus, Taxi, Auto) between venues with estimated fares and travel times |
-| **Immersive Gallery** | A dynamic, lightbox-enabled photo gallery powered by Cloudinary |
-| **AI Chatbot Assistant** | A context-aware assistant (powered by Groq API) that answers queries about history, schedules, and travel tips in English or Kannada |
-| **Voice Assistant** | Voice-enabled interaction for hands-free navigation and queries |
-| **Bilingual Support** | Seamless language toggling with context-based translations for a localized experience |
-| **Find My Way** | Real-time routing and directions to festival venues |
+| Feature                     | Description                                                                                                                          |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **Interactive Event Map**   | Pinpoint major venues, calculate distances from your live location, and get instant navigation cues using MapLibre GL                |
+| **Smart Transport Planner** | Compare travel options (Bus, Taxi, Auto) between venues with estimated fares and travel times                                        |
+| **Immersive Gallery**       | A dynamic, lightbox-enabled photo gallery powered by Cloudinary                                                                      |
+| **AI Chatbot Assistant**    | A context-aware assistant (powered by Groq API) that answers queries about history, schedules, and travel tips in English or Kannada |
+| **Voice Assistant**         | Voice-enabled interaction for hands-free navigation and queries                                                                      |
+| **Bilingual Support**       | Seamless language toggling with context-based translations for a localized experience                                                |
+| **Find My Way**             | Real-time routing and directions to festival venues                                                                                  |
 
 ## Tech Stack
 
-| Category | Technologies |
-|----------|-------------|
-| **Core** | React 19.2, Vite 7, React Router DOM 7 |
-| **Styling** | Tailwind CSS 3.4, Lucide Icons |
-| **Maps** | MapLibre GL 4.1 |
-| **AI** | Groq API (llama-3.1-8b-instant model) |
-| **Media** | Cloudinary (Image optimization & hosting) |
-| **Email** | EmailJS (Contact form relay) |
-| **Deployment** | Vercel (Serverless functions) |
+| Category       | Technologies                              |
+| -------------- | ----------------------------------------- |
+| **Core**       | React 19.2, Vite 7, React Router DOM 7    |
+| **Styling**    | Tailwind CSS 3.4, Lucide Icons            |
+| **Maps**       | MapLibre GL 4.1                           |
+| **AI**         | Groq API (llama-3.1-8b-instant model)     |
+| **Media**      | Cloudinary (Image optimization & hosting) |
+| **Email**      | EmailJS (Contact form relay)              |
+| **Deployment** | Vercel (Serverless functions)             |
 
 ## Getting Started
 
@@ -58,12 +58,14 @@ It bridges the gap between tradition and technology by offering a fully bilingua
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/yourusername/dasara-mitra.git
    cd dasara-mitra
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
@@ -72,16 +74,16 @@ It bridges the gap between tradition and technology by offering a fully bilingua
 
    Create a `.env` file in the root directory:
 
-   | Variable | Description |
-   |----------|-------------|
-   | `GROQ_API_KEY` | Your Groq API Key for the chatbot |
-   | `VITE_CLOUDINARY_CLOUD_NAME` | Your Cloudinary Cloud Name |
+   | Variable                       | Description                                                 |
+   | ------------------------------ | ----------------------------------------------------------- |
+   | `GEMINI_API_KEY`               | Your Gemini API Key for the chatbot                         |
+   | `VITE_CLOUDINARY_CLOUD_NAME`   | Your Cloudinary Cloud Name                                  |
    | `VITE_CLOUDINARY_GALLERY_TAGS` | Comma-separated Cloudinary tags (e.g., `mysuru_palace,...`) |
-   | `VITE_EVENT_CLOUDINARY_TAGS` | JSON map of event IDs to Cloudinary tags |
-   | `VITE_EMAILJS_SERVICE_ID` | EmailJS Service ID |
-   | `VITE_EMAILJS_TEMPLATE_ID` | EmailJS Template ID |
-   | `VITE_EMAILJS_PUBLIC_KEY` | EmailJS Public Key |
-   | `VITE_ASSISTANT_API_BASE_URL` | URL of the backend proxy (default `http://localhost:4000`) |
+   | `VITE_EVENT_CLOUDINARY_TAGS`   | JSON map of event IDs to Cloudinary tags                    |
+   | `VITE_EMAILJS_SERVICE_ID`      | EmailJS Service ID                                          |
+   | `VITE_EMAILJS_TEMPLATE_ID`     | EmailJS Template ID                                         |
+   | `VITE_EMAILJS_PUBLIC_KEY`      | EmailJS Public Key                                          |
+   | `VITE_ASSISTANT_API_BASE_URL`  | URL of the backend proxy (default `http://localhost:4000`)  |
 
 4. **Run the development servers**
    ```bash
@@ -89,14 +91,14 @@ It bridges the gap between tradition and technology by offering a fully bilingua
    npm run dev        # Frontend (Vite)
    ```
 
-> **Deploying on Vercel?** The repo includes `api/assistant.js`, a serverless Groq proxy. Add the same environment variables in the Vercel dashboard and the frontend will call `/api/assistant` automatically.
+> **Deploying on Vercel?** The repo includes `api/assistant.js`, a serverless Gemini proxy. Add the same environment variables in the Vercel dashboard and the frontend will call `/api/assistant` automatically.
 
 ## Project Structure
 
 ```
 Dasara-Mitra/
 ├── api/                     # Vercel serverless functions
-│   ├── assistant.js         # Groq AI proxy endpoint
+│   ├── assistant.js         # Gemini AI proxy endpoint
 │   └── osrm-route.js        # Routing API proxy
 ├── Components/              # Reusable UI + feature components
 │   ├── Chatbot.jsx          # AI chatbot interface
@@ -145,18 +147,18 @@ The app will automatically fetch and render all images with this tag.
 
 The contact form is wired to send emails directly to your inbox. Configure your EmailJS template to accept these variables:
 
-| Variable | Description |
-|----------|-------------|
-| `from_name` | The sender's name |
-| `email` | The sender's email address (Set as **Reply-To**) |
-| `message` | The body of the inquiry |
+| Variable    | Description                                      |
+| ----------- | ------------------------------------------------ |
+| `from_name` | The sender's name                                |
+| `email`     | The sender's email address (Set as **Reply-To**) |
+| `message`   | The body of the inquiry                          |
 
-### Secure Groq Proxy (Express or Serverless)
+### Secure Gemini Proxy (Express or Serverless)
 
 #### Option 1 — Express backend (`/server` folder)
 
 1. `cd server && cp .env.example .env`
-2. Fill in `GROQ_API_KEY`, and adjust `PORT`, `ALLOWED_ORIGINS`, or `GROQ_MODEL` as needed
+2. Fill in `GEMINI_API_KEY`, and adjust `PORT`, `ALLOWED_ORIGINS`, or `GEMINI_MODEL` as needed
 3. Run `npm install` inside `server/` once
 4. Start the proxy locally with `npm run dev` (or from the project root via `npm run server`)
 5. Set `VITE_ASSISTANT_API_BASE_URL` in the root `.env` to `http://localhost:4000`
@@ -164,7 +166,7 @@ The contact form is wired to send emails directly to your inbox. Configure your 
 #### Option 2 — Vercel Serverless function (`/api/assistant.js`)
 
 1. Deploy the repo to Vercel; the `api/assistant.js` file becomes a serverless endpoint automatically
-2. Configure the same environment variables (`GROQ_API_KEY`, optional `ALLOWED_ORIGINS`, etc.) in the Vercel Project Settings
+2. Configure the same environment variables (`GEMINI_API_KEY`, optional `ALLOWED_ORIGINS`, etc.) in the Vercel Project Settings
 3. The frontend simply calls `/api/assistant`, so the Groq key remains on the serverless backend
 
 > Use both setups: Express for local development/testing and the Vercel function for production.
@@ -179,8 +181,8 @@ The contact form is wired to send emails directly to your inbox. Configure your 
 
 ### AI Security
 
-- **Groq Proxy:** The `server/` folder includes a lightweight Express proxy that keeps `GROQ_API_KEY` on the server.
-- **Production Advice:** Always route Groq calls through this proxy (or your own secure backend) before deploying.
+- **Gemini Proxy:** The `server/` folder includes a lightweight Express proxy that keeps `GEMINI_API_KEY` on the server.
+- **Production Advice:** Always route Gemini calls through this proxy (or your own secure backend) before deploying.
 
 ---
 

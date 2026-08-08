@@ -109,8 +109,7 @@ export async function askFestivalAssistant({
 
   const data = await response.json();
 
-  // OpenAI returns choices[0].message.content
-  const reply = data?.choices?.[0]?.message?.content?.trim();
+  const reply = data?.reply?.trim();
 
   if (!reply) {
     throw new Error("empty-response");
